@@ -38,9 +38,7 @@ public class VisibilityListener implements Listener {
             for (Player observer : Bukkit.getOnlinePlayers()) {
                 double maxDistance = config.getMaxDistance();
                 for (Entity target : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
-                    if (!config.shouldCheckEntity(target)) {
-                        continue;
-                    }
+                    if (!config.shouldCheckEntity(target)) continue;
 
                     updateVisibility(observer, target);
                 }
@@ -62,6 +60,7 @@ public class VisibilityListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void on(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+
         plugin.getVisibilityManager().removePlayer(player.getUniqueId());
         plugin.getVisibilityManager().removeEntity(player.getEntityId());
         plugin.getVisibilityService().removePlayer(player.getUniqueId());
@@ -75,6 +74,7 @@ public class VisibilityListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void on(PlayerChangedWorldEvent event) {
         Player player = event.getPlayer();
+
         plugin.getVisibilityManager().removePlayer(player.getUniqueId());
         plugin.getVisibilityManager().removeEntity(player.getEntityId());
         plugin.getVisibilityService().removePlayer(player.getUniqueId());
@@ -83,6 +83,7 @@ public class VisibilityListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void on(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
+
         plugin.getVisibilityManager().removePlayer(player.getUniqueId());
         plugin.getVisibilityManager().removeEntity(player.getEntityId());
         plugin.getVisibilityService().removePlayer(player.getUniqueId());
@@ -156,6 +157,7 @@ public class VisibilityListener implements Listener {
 
     public void updateVisibility(Player observer, Entity target) {
         boolean canSee = plugin.getVisibilityService().canSee(observer, target);
+
         if (canSee) {
             plugin.getVisibilityManager().showFor(observer, target);
         } else if (!config.getHide().isIgnoreNametag() && plugin.getVisibilityService().canSeeNametag(observer, target)) {

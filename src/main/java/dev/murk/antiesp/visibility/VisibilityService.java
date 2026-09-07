@@ -84,7 +84,7 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
 
         if (config.getHide().isInLava()) {
             if (eye.getBlock().getType() == Material.LAVA || targetLoc.getBlock().getType() == Material.LAVA) {
-                if (distSq > 25.0) {
+                if (distSq > config.getHide().getLavaDistanceSquared()) {
                     return false;
                 }
             }
@@ -200,7 +200,7 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
         }
 
         if (config.getHide().isInLava() && org.bukkit.Bukkit.isPrimaryThread()) {
-            if (eye.getBlock().getType() == Material.LAVA && distSq > 25.0) {
+            if (eye.getBlock().getType() == Material.LAVA && distSq > config.getHide().getLavaDistanceSquared()) {
                 return false;
             }
         }
@@ -371,7 +371,7 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
 
         if (config.getHide().isInLava()) {
             if (eye.getBlock().getType() == Material.LAVA || targetLoc.getBlock().getType() == Material.LAVA) {
-                return !(distSq > 25.0);
+                return !(distSq > config.getHide().getLavaDistanceSquared());
             }
         }
 

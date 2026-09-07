@@ -84,6 +84,7 @@ public final class Config {
         hide.setBlindness(fileConfig.getBoolean("hide.blindness", true));
         hide.setBlindnessDistance(Math.max(0.0, fileConfig.getDouble("hide.blindness-distance", 5.0)));
         hide.setInLava(fileConfig.getBoolean("hide.in-lava", true));
+        hide.setLavaDistance(Math.max(0.0, fileConfig.getDouble("hide.lava-distance", 5.0)));
 
         if (fileConfig.isConfigurationSection("hitbox-expansion")) {
             hitboxExpansionX = Math.max(0.0, fileConfig.getDouble("hitbox-expansion.x", 0.25));
@@ -142,10 +143,17 @@ public final class Config {
         private double blindnessDistance = 5.0;
         private double blindnessDistanceSquared = 25.0;
         private boolean inLava = true;
+        private double lavaDistance = 5.0;
+        private double lavaDistanceSquared = 25.0;
 
         public void setBlindnessDistance(double dist) {
             this.blindnessDistance = dist;
             this.blindnessDistanceSquared = dist * dist;
+        }
+
+        public void setLavaDistance(double dist) {
+            this.lavaDistance = dist;
+            this.lavaDistanceSquared = dist * dist;
         }
     }
 }

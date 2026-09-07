@@ -133,26 +133,32 @@ public class VisibilityListener implements Listener {
             return;
         }
 
-        double maxDistance = config.getMaxDistance();
-        if (living instanceof Player observer) {
-            for (Entity target : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
-                if (config.shouldCheckEntity(target)) {
-                    updateVisibility(observer, target);
-                }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!living.isValid()) {
+                return;
             }
-        }
 
-        double maxDistSq = config.getMaxDistanceSquared();
-        for (Player observer : living.getWorld().getPlayers()) {
-            if (observer.equals(living)) {
-                continue;
-            }
-            if (observer.getLocation().distanceSquared(living.getLocation()) <= maxDistSq) {
-                if (config.shouldCheckEntity(living)) {
-                    updateVisibility(observer, living);
+            double maxDistance = config.getMaxDistance();
+            if (living instanceof Player observer) {
+                for (Entity target : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
+                    if (config.shouldCheckEntity(target)) {
+                        updateVisibility(observer, target);
+                    }
                 }
             }
-        }
+
+            double maxDistSq = config.getMaxDistanceSquared();
+            for (Player observer : living.getWorld().getPlayers()) {
+                if (observer.equals(living)) {
+                    continue;
+                }
+                if (observer.getLocation().distanceSquared(living.getLocation()) <= maxDistSq) {
+                    if (config.shouldCheckEntity(living)) {
+                        updateVisibility(observer, living);
+                    }
+                }
+            }
+        });
     }
 
     public void updateVisibility(Player observer, Entity target) {

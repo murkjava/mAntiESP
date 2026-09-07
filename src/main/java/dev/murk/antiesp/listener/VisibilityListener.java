@@ -4,12 +4,15 @@ import dev.murk.antiesp.MAntiESP;
 import dev.murk.antiesp.config.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -39,14 +42,7 @@ public class VisibilityListener implements Listener {
                         continue;
                     }
 
-                    boolean canSee = plugin.getVisibilityService().canSee(observer, target);
-                    if (canSee) {
-                        plugin.getVisibilityManager().showFor(observer, target);
-                    } else if (!config.getHide().isIgnoreNametag() && plugin.getVisibilityService().hasVisibleNametag(target)) {
-                        plugin.getVisibilityManager().stripFor(observer, target);
-                    } else {
-                        plugin.getVisibilityManager().hideFor(observer, target);
-                    }
+                    updateVisibility(observer, target);
                 }
             }
         }, 0, config.getTicksPeriod());
@@ -122,6 +118,50 @@ public class VisibilityListener implements Listener {
     public void on(ChunkUnloadEvent event) {
         for (Entity entity : event.getChunk().getEntities()) {
             plugin.getVisibilityManager().removeEntity(entity.getEntityId());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void on(EntityPotionEffectEvent event) {
+        PotionEffectType type = event.getModifiedType();
+        if (type != PotionEffectType.GLOWING && type != PotionEffectType.BLINDNESS && type != PotionEffectType.INVISIBILITY) {
+            return;
+        }
+
+        if (!(event.getEntity() instanceof LivingEntity living)) {
+            return;
+        }
+
+        double maxDistance = config.getMaxDistance();
+        if (living instanceof Player observer) {
+            for (Entity target : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
+                if (config.shouldCheckEntity(target)) {
+                    updateVisibility(observer, target);
+                }
+            }
+        }
+
+        double maxDistSq = config.getMaxDistanceSquared();
+        for (Player observer : living.getWorld().getPlayers()) {
+            if (observer.equals(living)) {
+                continue;
+            }
+            if (observer.getLocation().distanceSquared(living.getLocation()) <= maxDistSq) {
+                if (config.shouldCheckEntity(living)) {
+                    updateVisibility(observer, living);
+                }
+            }
+        }
+    }
+
+    public void updateVisibility(Player observer, Entity target) {
+        boolean canSee = plugin.getVisibilityService().canSee(observer, target);
+        if (canSee) {
+            plugin.getVisibilityManager().showFor(observer, target);
+        } else if (!config.getHide().isIgnoreNametag() && plugin.getVisibilityService().canSeeNametag(observer, target)) {
+            plugin.getVisibilityManager().stripFor(observer, target);
+        } else {
+            plugin.getVisibilityManager().hideFor(observer, target);
         }
     }
 }

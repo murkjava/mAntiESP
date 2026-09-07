@@ -6,6 +6,8 @@ import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.player.Equipment;
 import com.github.retrooper.packetevents.protocol.player.EquipmentSlot;
 import com.github.retrooper.packetevents.util.Vector3d;
+import com.github.retrooper.packetevents.protocol.potion.PotionType;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEffect;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEquipment;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityTeleport;
@@ -16,6 +18,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.potion.PotionEffect;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +33,7 @@ public final class PacketSender {
         sendEntityTeleport(observer, entity);
         sendMetadataPacket(observer, entity);
         sendEquipmentPacket(observer, entity);
+        sendPotionEffects(observer, entity);
     }
 
     public static void sendSpawnPacket(Player observer, Entity entity) {
@@ -110,6 +114,33 @@ public final class PacketSender {
             list.add(new Equipment(slot, SpigotConversionUtil.fromBukkitItemStack(bukkitItem)));
         } else {
             list.add(new Equipment(slot, ItemStack.EMPTY));
+        }
+    }
+
+    public static void sendPotionEffects(Player observer, Entity entity) {
+        if (!(entity instanceof LivingEntity living)) {
+            return;
+        }
+
+        for (PotionEffect effect : living.getActivePotionEffects()) {
+            PotionType potionType = SpigotConversionUtil.fromBukkitPotionEffectType(effect.getType());
+            if (potionType == null) {
+                continue;
+            }
+
+            byte flags = 0;
+            if (effect.isAmbient()) flags |= 0x01;
+            if (effect.hasParticles()) flags |= 0x02;
+            if (effect.hasIcon()) flags |= 0x04;
+
+            WrapperPlayServerEntityEffect packet = new WrapperPlayServerEntityEffect(
+                    entity.getEntityId(),
+                    potionType,
+                    effect.getAmplifier(),
+                    effect.getDuration(),
+                    flags
+            );
+            PacketEvents.getAPI().getPlayerManager().sendPacket(observer, packet);
         }
     }
 }

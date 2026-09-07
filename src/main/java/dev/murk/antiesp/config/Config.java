@@ -82,6 +82,7 @@ public final class Config {
         hide.setIgnoreSpectator(fileConfig.getBoolean("hide.ignore-spectator", true));
         hide.setIgnoreGlowing(fileConfig.getBoolean("hide.ignore-glowing", false));
         hide.setBlindness(fileConfig.getBoolean("hide.blindness", true));
+        hide.setBlindnessDistance(Math.max(0.0, fileConfig.getDouble("hide.blindness-distance", 5.0)));
         hide.setInLava(fileConfig.getBoolean("hide.in-lava", true));
 
         if (fileConfig.isConfigurationSection("hitbox-expansion")) {
@@ -138,6 +139,13 @@ public final class Config {
         private boolean ignoreSpectator = true;
         private boolean ignoreGlowing = false;
         private boolean blindness = true;
+        private double blindnessDistance = 5.0;
+        private double blindnessDistanceSquared = 25.0;
         private boolean inLava = true;
+
+        public void setBlindnessDistance(double dist) {
+            this.blindnessDistance = dist;
+            this.blindnessDistanceSquared = dist * dist;
+        }
     }
 }

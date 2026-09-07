@@ -72,17 +72,12 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
             return false;
         }
 
-        boolean glowing = target.isGlowing();
-        if (!glowing && target instanceof LivingEntity) {
-            glowing = ((LivingEntity) target).hasPotionEffect(PotionEffectType.GLOWING);
-        }
-
-        if (!config.getHide().isIgnoreGlowing() && glowing) {
+        if (!config.getHide().isIgnoreGlowing() && isGlowing(target)) {
             return true;
         }
 
         if (config.getHide().isBlindness() && observer.hasPotionEffect(PotionEffectType.BLINDNESS)) {
-            if (distSq > 25.0) {
+            if (distSq > config.getHide().getBlindnessDistanceSquared()) {
                 return false;
             }
         }
@@ -94,7 +89,6 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
                 }
             }
         }
-
 
         double height = target.getHeight();
         double width = target.getWidth();
@@ -200,7 +194,7 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
         }
 
         if (config.getHide().isBlindness() && observer.hasPotionEffect(PotionEffectType.BLINDNESS)) {
-            if (distSq > 25.0) {
+            if (distSq > config.getHide().getBlindnessDistanceSquared()) {
                 return false;
             }
         }
@@ -320,7 +314,7 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
                 }
             }
             Vector fallback = player.getVelocity();
-            velocities.put(player.getUniqueId(), fallback != null ? fallback : new Vector(0, 0, 0));
+            velocities.put(player.getUniqueId(), fallback);
         }
     }
 
@@ -339,8 +333,49 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
         if (vel != null) {
             return vel;
         }
-        Vector fallback = entity.getVelocity();
-        return fallback != null ? fallback : new Vector(0, 0, 0);
+        return entity.getVelocity();
+    }
+
+    public boolean isGlowing(Entity target) {
+        if (target == null) {
+            return false;
+        }
+        if (target.isGlowing()) {
+            return true;
+        }
+        if (target instanceof LivingEntity living) {
+            return living.hasPotionEffect(PotionEffectType.GLOWING);
+        }
+        return false;
+    }
+
+    public boolean canSeeNametag(Player observer, Entity target) {
+        if (!hasVisibleNametag(target)) return false;
+
+        Location eye = observer.getEyeLocation();
+        Location targetLoc = target.getLocation();
+        double dx = targetLoc.getX() - eye.getX();
+        double dy = targetLoc.getY() - eye.getY();
+        double dz = targetLoc.getZ() - eye.getZ();
+        double distSq = dx * dx + dy * dy + dz * dz;
+
+        if (distSq > config.getMaxDistanceSquared()) {
+            return false;
+        }
+
+        if (config.getHide().isBlindness() && observer.hasPotionEffect(PotionEffectType.BLINDNESS)) {
+            if (distSq > config.getHide().getBlindnessDistanceSquared()) {
+                return false;
+            }
+        }
+
+        if (config.getHide().isInLava()) {
+            if (eye.getBlock().getType() == Material.LAVA || targetLoc.getBlock().getType() == Material.LAVA) {
+                return !(distSq > 25.0);
+            }
+        }
+
+        return true;
     }
 
     public boolean hasVisibleNametag(Entity target) {

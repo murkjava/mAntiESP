@@ -77,6 +77,7 @@ public class VisibilityManager {
                     PacketSender.sendEntityTeleport(observer, target);
                     PacketSender.sendMetadataPacket(observer, target);
                     PacketSender.sendEmptyEquipmentPacket(observer, entityId);
+                    PacketSender.sendPotionEffects(observer, target);
                     stripped.add(entityId);
                 } else if (stripped.add(entityId)) {
                     PacketSender.sendEmptyEquipmentPacket(observer, entityId);
@@ -114,6 +115,7 @@ public class VisibilityManager {
                 } else if (wasStripped) {
                     PacketSender.sendMetadataPacket(observer, target);
                     PacketSender.sendEquipmentPacket(observer, target);
+                    PacketSender.sendPotionEffects(observer, target);
                 }
             }
             return true;
@@ -237,6 +239,7 @@ public class VisibilityManager {
                     if (stripped.contains(entity.getEntityId())) {
                         PacketSender.sendMetadataPacket(observer, entity);
                         PacketSender.sendEquipmentPacket(observer, entity);
+                        PacketSender.sendPotionEffects(observer, entity);
                     }
                 }
             }

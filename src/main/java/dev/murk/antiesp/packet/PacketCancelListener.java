@@ -123,7 +123,7 @@ public class PacketCancelListener extends PacketListenerAbstract {
                     if (uuidOpt.isPresent()) {
                         Player targetPlayer = Bukkit.getPlayer(uuidOpt.get());
                         if (targetPlayer != null) {
-                            hasNametag = visibilityService.hasVisibleNametag(targetPlayer);
+                            hasNametag = visibilityService.canSeeNametag(observer, targetPlayer);
                         }
                     }
                 }
@@ -157,7 +157,7 @@ public class PacketCancelListener extends PacketListenerAbstract {
                 var uuid = packet.getUUID();
                 Player targetPlayer = Bukkit.getPlayer(uuid);
                 if (targetPlayer != null) {
-                    hasNametag = visibilityService.hasVisibleNametag(targetPlayer);
+                    hasNametag = visibilityService.canSeeNametag(observer, targetPlayer);
                 }
             }
 

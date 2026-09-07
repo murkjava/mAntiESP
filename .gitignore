@@ -1,5 +1,6 @@
 target/
 src/test/
+releases/
 
 # IDE files
 .idea/

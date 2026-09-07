@@ -1,0 +1,127 @@
+package dev.murk.antiesp.listener;
+
+import dev.murk.antiesp.MAntiESP;
+import dev.murk.antiesp.config.Config;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityTeleportEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
+import org.bukkit.scheduler.BukkitTask;
+
+public class VisibilityListener implements Listener {
+    private final MAntiESP plugin;
+    private final Config config;
+    private BukkitTask task;
+
+    public VisibilityListener(MAntiESP plugin, Config config) {
+        this.plugin = plugin;
+        this.config = config;
+        startTask();
+    }
+
+    public void startTask() {
+        cancelTask();
+        task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            plugin.getVisibilityService().updateLocations();
+            for (Player observer : Bukkit.getOnlinePlayers()) {
+                double maxDistance = config.getMaxDistance();
+                for (Entity target : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
+                    if (!config.shouldCheckEntity(target)) {
+                        continue;
+                    }
+
+                    boolean canSee = plugin.getVisibilityService().canSee(observer, target);
+                    if (canSee) {
+                        plugin.getVisibilityManager().showFor(observer, target);
+                    } else if (!config.getHide().isIgnoreNametag() && plugin.getVisibilityService().hasVisibleNametag(target)) {
+                        plugin.getVisibilityManager().stripFor(observer, target);
+                    } else {
+                        plugin.getVisibilityManager().hideFor(observer, target);
+                    }
+                }
+            }
+        }, 0, config.getTicksPeriod());
+    }
+
+    public void restartTask() {
+        startTask();
+    }
+
+    public void cancelTask() {
+        if (task != null) {
+            task.cancel();
+            task = null;
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void on(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        plugin.getVisibilityManager().removePlayer(player.getUniqueId());
+        plugin.getVisibilityManager().removeEntity(player.getEntityId());
+        plugin.getVisibilityService().removePlayer(player.getUniqueId());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void on(EntityDeathEvent event) {
+        plugin.getVisibilityManager().removeEntity(event.getEntity().getEntityId());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void on(PlayerChangedWorldEvent event) {
+        Player player = event.getPlayer();
+        plugin.getVisibilityManager().removePlayer(player.getUniqueId());
+        plugin.getVisibilityManager().removeEntity(player.getEntityId());
+        plugin.getVisibilityService().removePlayer(player.getUniqueId());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void on(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        plugin.getVisibilityManager().removePlayer(player.getUniqueId());
+        plugin.getVisibilityManager().removeEntity(player.getEntityId());
+        plugin.getVisibilityService().removePlayer(player.getUniqueId());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void on(PlayerTeleportEvent event) {
+        if (event.getFrom().getWorld() == null || event.getTo().getWorld() == null) {
+            return;
+        }
+
+        Player player = event.getPlayer();
+        plugin.getVisibilityService().removePlayer(player.getUniqueId());
+
+        if (!event.getFrom().getWorld().equals(event.getTo().getWorld())) {
+            plugin.getVisibilityManager().removePlayer(player.getUniqueId());
+            plugin.getVisibilityManager().removeEntity(player.getEntityId());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void on(EntityTeleportEvent event) {
+        if (event.getTo() == null || event.getFrom().getWorld() == null || event.getTo().getWorld() == null) {
+            return;
+        }
+
+        if (!event.getFrom().getWorld().equals(event.getTo().getWorld())) {
+            plugin.getVisibilityManager().removeEntity(event.getEntity().getEntityId());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void on(ChunkUnloadEvent event) {
+        for (Entity entity : event.getChunk().getEntities()) {
+            plugin.getVisibilityManager().removeEntity(entity.getEntityId());
+        }
+    }
+}

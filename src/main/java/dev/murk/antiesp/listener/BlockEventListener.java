@@ -2,7 +2,6 @@ package dev.murk.antiesp.listener;
 
 import dev.murk.antiesp.config.Config;
 import dev.murk.antiesp.cache.ChunkCacheManager;
-import dev.murk.antiesp.cache.MaterialClassifier;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -32,7 +31,7 @@ public final class BlockEventListener implements Listener {
             return;
         }
 
-        cacheManager.setOccluding(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ(), false);
+        cacheManager.removeBlock(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -42,8 +41,7 @@ public final class BlockEventListener implements Listener {
             return;
         }
 
-        boolean occluding = MaterialClassifier.isOccluding(block.getType());
-        cacheManager.setOccluding(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ(), occluding);
+        cacheManager.setBlock(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ(), block.getBlockData());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -53,7 +51,7 @@ public final class BlockEventListener implements Listener {
             return;
         }
 
-        cacheManager.setOccluding(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ(), false);
+        cacheManager.removeBlock(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -63,8 +61,7 @@ public final class BlockEventListener implements Listener {
             return;
         }
 
-        boolean occluding = MaterialClassifier.isOccluding(event.getNewState().getType());
-        cacheManager.setOccluding(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ(), occluding);
+        cacheManager.setBlock(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ(), event.getNewState().getBlockData());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -75,7 +72,7 @@ public final class BlockEventListener implements Listener {
 
         UUID uuid = event.getBlock().getWorld().getUID();
         for (Block block : event.blockList()) {
-            cacheManager.setOccluding(uuid, block.getX(), block.getY(), block.getZ(), false);
+            cacheManager.removeBlock(uuid, block.getX(), block.getY(), block.getZ());
         }
     }
 
@@ -87,7 +84,7 @@ public final class BlockEventListener implements Listener {
 
         UUID uuid = event.getLocation().getWorld().getUID();
         for (Block block : event.blockList()) {
-            cacheManager.setOccluding(uuid, block.getX(), block.getY(), block.getZ(), false);
+            cacheManager.removeBlock(uuid, block.getX(), block.getY(), block.getZ());
         }
     }
 }

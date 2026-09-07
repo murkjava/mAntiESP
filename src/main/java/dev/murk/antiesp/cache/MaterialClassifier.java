@@ -1,6 +1,15 @@
 package dev.murk.antiesp.cache;
 
 import org.bukkit.Material;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.Bisected;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.type.Bed;
+import org.bukkit.block.data.type.Gate;
+import org.bukkit.block.data.type.Slab;
+import org.bukkit.block.data.type.Snow;
+import org.bukkit.block.data.type.Stairs;
+import org.bukkit.block.data.type.TrapDoor;
 
 import java.util.Set;
 
@@ -95,5 +104,90 @@ public final class MaterialClassifier {
             return false;
         }
         return OCCLUDING[ordinal];
+    }
+
+    public static boolean isFullOccluding(BlockData data) {
+        if (data == null) {
+            return false;
+        }
+        if (data instanceof Slab slab) {
+            return slab.getType() == Slab.Type.DOUBLE && isOccluding(slab.getMaterial());
+        }
+        return isOccluding(data.getMaterial());
+    }
+
+    public static BlockBox[] getCustomBoxes(BlockData data) {
+        if (data == null) {
+            return null;
+        }
+
+        if (data instanceof Slab slab) {
+            if (slab.getType() == Slab.Type.BOTTOM) {
+                return new BlockBox[]{BlockBox.SLAB_BOTTOM};
+            } else if (slab.getType() == Slab.Type.TOP) {
+                return new BlockBox[]{BlockBox.SLAB_TOP};
+            }
+            return null;
+        }
+
+        if (data instanceof Stairs stairs) {
+            Bisected.Half half = stairs.getHalf();
+            BlockFace facing = stairs.getFacing();
+            BlockBox base = (half == Bisected.Half.BOTTOM) ? BlockBox.SLAB_BOTTOM : BlockBox.SLAB_TOP;
+            BlockBox step;
+
+            if (half == Bisected.Half.BOTTOM) {
+                step = switch (facing) {
+                    case NORTH -> new BlockBox(0, 0.5f, 0, 1, 1, 0.5f);
+                    case SOUTH -> new BlockBox(0, 0.5f, 0.5f, 1, 1, 1);
+                    case WEST -> new BlockBox(0, 0.5f, 0, 0.5f, 1, 1);
+                    case EAST -> new BlockBox(0.5f, 0.5f, 0, 1, 1, 1);
+                    default -> new BlockBox(0, 0.5f, 0, 1, 1, 0.5f);
+                };
+            } else {
+                step = switch (facing) {
+                    case NORTH -> new BlockBox(0, 0, 0, 1, 0.5f, 0.5f);
+                    case SOUTH -> new BlockBox(0, 0, 0.5f, 1, 0.5f, 1);
+                    case WEST -> new BlockBox(0, 0, 0, 0.5f, 0.5f, 1);
+                    case EAST -> new BlockBox(0.5f, 0, 0, 1, 0.5f, 1);
+                    default -> new BlockBox(0, 0, 0, 1, 0.5f, 0.5f);
+                };
+            }
+
+            return new BlockBox[]{base, step};
+        }
+
+        if (data instanceof Snow snow) {
+            float height = Math.min(1.0f, snow.getLayers() / 8.0f);
+            return new BlockBox[]{new BlockBox(0, 0, 0, 1, height, 1)};
+        }
+
+        if (data.getMaterial().name().contains("CARPET")) {
+            return new BlockBox[]{BlockBox.CARPET};
+        }
+
+        if (data instanceof TrapDoor trapdoor) {
+            if (!trapdoor.isOpen()) {
+                if (trapdoor.getHalf() == Bisected.Half.BOTTOM) {
+                    return new BlockBox[]{new BlockBox(0, 0, 0, 1, 0.1875f, 1)};
+                } else {
+                    return new BlockBox[]{new BlockBox(0, 0.8125f, 0, 1, 1, 1)};
+                }
+            }
+            return null;
+        }
+
+        if (data instanceof Bed) {
+            return new BlockBox[]{BlockBox.BED};
+        }
+
+        if (data instanceof Gate gate) {
+            if (!gate.isOpen()) {
+                return new BlockBox[]{new BlockBox(0, 0, 0, 1, 1.5f, 1)};
+            }
+            return null;
+        }
+
+        return null;
     }
 }

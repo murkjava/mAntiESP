@@ -78,7 +78,7 @@ public final class FastRaytracer {
                 return true;
             }
 
-            if (step > 0 && cacheManager.isOccluding(worldId, currentX, currentY, currentZ)) {
+            if (step > 0 && cacheManager.isBlocked(worldId, currentX, currentY, currentZ, x0, y0, z0, x1, y1, z1)) {
                 return false;
             }
 

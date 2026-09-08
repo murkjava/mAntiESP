@@ -77,9 +77,8 @@ public final class MAntiESP extends JavaPlugin {
     }
 
     public void reload() {
-        PluginManager pm = Bukkit.getPluginManager();
-        pm.disablePlugin(this);
-        pm.enablePlugin(this);
+        onDisable();
+        onEnable();
     }
 
     @Override

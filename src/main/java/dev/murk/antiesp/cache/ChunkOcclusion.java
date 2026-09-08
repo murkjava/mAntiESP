@@ -54,6 +54,40 @@ public final class ChunkOcclusion {
         return false;
     }
 
+    public double clip(int x, int y, int z,
+                       double x0, double y0, double z0,
+                       double x1, double y1, double z1) {
+        int sectionY = (y >> 4) + SECTION_OFFSET;
+        if (sectionY < 0 || sectionY >= SECTION_COUNT) {
+            return -1.0;
+        }
+
+        BitSet section = sections[sectionY];
+        int index = ((y & 15) << 8) | ((z & 15) << 4) | (x & 15);
+        if (section != null && section.get(index)) {
+            return BlockBox.FULL_CUBE.clip(x0, y0, z0, x1, y1, z1, x, y, z);
+        }
+
+        if (!customShapes.isEmpty()) {
+            int key = (sectionY << 12) | index;
+            BlockBox[] boxes = customShapes.get(key);
+            if (boxes != null) {
+                double minT = -1.0;
+                for (BlockBox box : boxes) {
+                    double t = box.clip(x0, y0, z0, x1, y1, z1, x, y, z);
+                    if (t >= 0.0) {
+                        if (minT < 0.0 || t < minT) {
+                            minT = t;
+                        }
+                    }
+                }
+                return minT;
+            }
+        }
+
+        return -1.0;
+    }
+
     public synchronized void setFullOccluding(int x, int y, int z, boolean occluding) {
         int sectionY = (y >> 4) + SECTION_OFFSET;
         if (sectionY < 0 || sectionY >= SECTION_COUNT) {

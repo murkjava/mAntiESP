@@ -32,6 +32,7 @@ public final class PacketSender {
         sendSpawnPacket(observer, entity);
         sendEntityTeleport(observer, entity);
         sendMetadataPacket(observer, entity);
+
         sendEquipmentPacket(observer, entity);
         sendPotionEffects(observer, entity);
     }
@@ -65,10 +66,6 @@ public final class PacketSender {
     }
 
     public static void sendMetadataPacket(Player observer, Entity entity) {
-        if (!(entity instanceof LivingEntity)) {
-            return;
-        }
-
         List<EntityData<?>> metadata = SpigotConversionUtil.getEntityMetadata(entity);
         WrapperPlayServerEntityMetadata packet = new WrapperPlayServerEntityMetadata(entity.getEntityId(), metadata);
         PacketEvents.getAPI().getPlayerManager().sendPacket(observer, packet);
@@ -88,14 +85,10 @@ public final class PacketSender {
     }
 
     public static void sendEquipmentPacket(Player observer, Entity entity) {
-        if (!(entity instanceof LivingEntity living)) {
-            return;
-        }
+        if (!(entity instanceof LivingEntity living)) return;
 
         EntityEquipment eq = living.getEquipment();
-        if (eq == null) {
-            return;
-        }
+        if (eq == null) return;
 
         List<Equipment> equipmentList = new ArrayList<>();
         addEquipmentIfPresent(equipmentList, EquipmentSlot.MAIN_HAND, eq.getItemInMainHand());
@@ -118,9 +111,7 @@ public final class PacketSender {
     }
 
     public static void sendPotionEffects(Player observer, Entity entity) {
-        if (!(entity instanceof LivingEntity living)) {
-            return;
-        }
+        if (!(entity instanceof LivingEntity living)) return;
 
         for (PotionEffect effect : living.getActivePotionEffects()) {
             PotionType potionType = SpigotConversionUtil.fromBukkitPotionEffectType(effect.getType());

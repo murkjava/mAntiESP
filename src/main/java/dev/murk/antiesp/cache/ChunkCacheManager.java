@@ -125,6 +125,22 @@ public final class ChunkCacheManager {
         return chunk.isBlocked(x, y, z, x0, y0, z0, x1, y1, z1);
     }
 
+    public double clip(UUID worldId, int x, int y, int z,
+                       double x0, double y0, double z0,
+                       double x1, double y1, double z1) {
+        Map<Long, ChunkOcclusion> cache = worldCaches.get(worldId);
+        if (cache == null) {
+            return -1.0;
+        }
+
+        ChunkOcclusion chunk = cache.get(getChunkKey(x >> 4, z >> 4));
+        if (chunk == null) {
+            return -1.0;
+        }
+
+        return chunk.clip(x, y, z, x0, y0, z0, x1, y1, z1);
+    }
+
     public void setBlock(UUID worldId, int x, int y, int z, BlockData data) {
         Map<Long, ChunkOcclusion> cache = worldCaches.computeIfAbsent(worldId, k -> new ConcurrentHashMap<>());
         ChunkOcclusion chunk = cache.computeIfAbsent(getChunkKey(x >> 4, z >> 4), k -> new ChunkOcclusion());

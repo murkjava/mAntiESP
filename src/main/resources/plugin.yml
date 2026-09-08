@@ -8,7 +8,6 @@ description: 'AntiESP'
 commands:
   mantiesp:
     description: Main command for mAntiESP
-    aliases: [mansiesp]
     permission: mantiesp.admin
     usage: /mantiesp reload
 

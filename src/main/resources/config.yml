@@ -1,3 +1,14 @@
+#
+#                 /$$$$$$              /$$     /$$ /$$$$$$$$  /$$$$$$  /$$$$$$$
+#                /$$__  $$            | $$    |__/| $$_____/ /$$__  $$| $$__  $$
+#  /$$$$$$/$$$$ | $$  \ $$ /$$$$$$$  /$$$$$$   /$$| $$      | $$  \__/| $$  \ $$
+# | $$_  $$_  $$| $$$$$$$$| $$__  $$|_  $$_/  | $$| $$$$$   |  $$$$$$ | $$$$$$$/
+# | $$ \ $$ \ $$| $$__  $$| $$  \ $$  | $$    | $$| $$__/    \____  $$| $$____/
+# | $$ | $$ | $$| $$  | $$| $$  | $$  | $$ /$$| $$| $$       /$$  \ $$| $$
+# | $$ | $$ | $$| $$  | $$| $$  | $$  |  $$$$/| $$| $$$$$$$$|  $$$$$$/| $$
+# |__/ |__/ |__/|__/  |__/|__/  |__/   \___/  |__/|________/ \______/ |__/
+#
+
 # раз в сколько тиков проверять видимость сущностей
 # 1 тик = 50 мс
 # чем ниже, тем больше нагрузка на сервер; очень частая проверка на доступность
@@ -14,6 +25,18 @@ entities-list:
   - "player"
   - "villager"
 
+# поддержка вида от третьего лица (F5)
+# учитывает положение камеры сзади и спереди игрока при рейтрейсе
+# может быть чуть затратнее, чем без включенной опции
+f5:
+  enabled: true
+  # дистанция камеры в блоках (в ванильном майнкрафте 4.0)
+  distance: 4.0
+  # отступ от блоков при столкновении камеры (в блоках)
+  collision-offset: 0.1
+  # проверять вид спереди (селфи-камера)
+  front-view: true
+
 min-distance: 3.0 # дистанция, после которой начинается raytrace
 max-distance: 64.0 # дистанция, после которой raytrace не будет запускаться, а сущность будет скрыта
 
@@ -22,30 +45,79 @@ max-distance: 64.0 # дистанция, после которой raytrace не
 disabled-worlds:
   - "example_world"
 
-# блоки, которые считаются прозрачными
+# блоки, которые считаются прозрачными (луч проходит сквозь них)
+# можно указывать как точные названия блоков (например: ICE, BARRIER),
+# так и ключевые слова / маски (например: DOOR, FENCE, BUTTON, LEAVES, *GLASS*)
 transparent-blocks:
   - "GLASS"
-  - "GLASS_PANE"
-  - "WHITE_STAINED_GLASS"
-  - "ORANGE_STAINED_GLASS"
-  - "MAGENTA_STAINED_GLASS"
-  - "LIGHT_BLUE_STAINED_GLASS"
-  - "YELLOW_STAINED_GLASS"
-  - "LIME_STAINED_GLASS"
-  - "PINK_STAINED_GLASS"
-  - "GRAY_STAINED_GLASS"
-  - "LIGHT_GRAY_STAINED_GLASS"
-  - "CYAN_STAINED_GLASS"
-  - "PURPLE_STAINED_GLASS"
-  - "BLUE_STAINED_GLASS"
-  - "BROWN_STAINED_GLASS"
-  - "GREEN_STAINED_GLASS"
-  - "RED_STAINED_GLASS"
-  - "BLACK_STAINED_GLASS"
-  - "IRON_BARS"
+  - "PANE"
+  - "LEAVES"
+  - "FENCE"
+  - "GATE"
+  - "BUTTON"
+  - "PRESSURE_PLATE"
+  - "DOOR"
+  - "TRAPDOOR"
+  - "BARS"
   - "CHAIN"
+  - "ROD"
   - "ICE"
   - "BARRIER"
+  - "STRUCTURE_VOID"
+  - "LIGHT"
+  - "SCAFFOLDING"
+  - "COBWEB"
+  - "SLIME_BLOCK"
+  - "HONEY_BLOCK"
+  - "TORCH"
+  - "LANTERN"
+  - "CAMPFIRE"
+  - "CANDLE"
+  - "SIGN"
+  - "BANNER"
+  - "GRASS"
+  - "FERN"
+  - "FLOWER"
+  - "SAPLING"
+  - "VINE"
+  - "MUSHROOM"
+  - "FUNGUS"
+  - "ROOTS"
+  - "SPROUTS"
+  - "DRIPLEAF"
+  - "SEAGRASS"
+  - "KELP"
+  - "WHEAT"
+  - "CARROTS"
+  - "POTATOES"
+  - "BEETROOTS"
+  - "NETHER_WART"
+  - "SWEET_BERRY_BUSH"
+  - "SUGAR_CANE"
+  - "BAMBOO"
+  - "CACTUS"
+  - "LILY_PAD"
+  - "RAIL"
+  - "REDSTONE_WIRE"
+  - "REPEATER"
+  - "COMPARATOR"
+  - "LEVER"
+  - "TRIPWIRE"
+  - "DAYLIGHT_DETECTOR"
+  - "BELL"
+  - "ENCHANTING_TABLE"
+  - "BREWING_STAND"
+  - "CAULDRON"
+  - "LECTERN"
+  - "GRINDSTONE"
+  - "STONECUTTER"
+  - "AMETHYST"
+  - "DRIPSTONE"
+  - "POT"
+  - "HEAD"
+  - "SKULL"
+  - "BED"
+  - "CARPET"
 
 # дополнительные настройки скрытия
 hide:

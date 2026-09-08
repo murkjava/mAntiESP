@@ -30,7 +30,7 @@ public class AntiESPCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        sender.sendMessage(ChatColor.RED + "Использование: /" + label + " reload");
+        sender.sendMessage("Использование: /" + label + " reload");
         return true;
     }
 

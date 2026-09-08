@@ -89,7 +89,7 @@ public final class MaterialClassifier {
                 continue;
             }
             int ordinal = material.ordinal();
-            if (ordinal >= 0 && ordinal < OCCLUDING.length) {
+            if (ordinal < OCCLUDING.length) {
                 OCCLUDING[ordinal] = false;
             }
         }

@@ -1,7 +1,7 @@
 package dev.murk.antiesp.visibility;
 
-import dev.murk.antiesp.config.Config;
 import dev.murk.antiesp.cache.ChunkCacheManager;
+import dev.murk.antiesp.config.Config;
 import dev.murk.antiesp.raytrace.FastRaytracer;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -68,7 +68,8 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
             }
         }
 
-        if (distSq > config.getMaxDistanceSquared()) {
+        double maxDist = config.getMaxDistance() + (config.getF5().isEnabled() ? config.getF5().getDistance() : 0.0);
+        if (distSq > maxDist * maxDist) {
             return false;
         }
 
@@ -105,6 +106,27 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
             return true;
         }
 
+        if (config.getF5().isEnabled()) {
+            Vector look = eye.getDirection();
+            double lookX = look.getX();
+            double lookY = look.getY();
+            double lookZ = look.getZ();
+            double f5Dist = config.getF5().getDistance();
+            double f5Offset = config.getF5().getCollisionOffset();
+
+            Vector camBack = FastRaytracer.clipCamera(cacheManager, worldId, startX, startY, startZ, -lookX, -lookY, -lookZ, f5Dist, f5Offset);
+            if (checkVisibility(worldId, camBack.getX(), camBack.getY(), camBack.getZ(), targetX, targetY, targetZ, width, height)) {
+                return true;
+            }
+
+            if (config.getF5().isFrontView()) {
+                Vector camFront = FastRaytracer.clipCamera(cacheManager, worldId, startX, startY, startZ, lookX, lookY, lookZ, f5Dist, f5Offset);
+                if (checkVisibility(worldId, camFront.getX(), camFront.getY(), camFront.getZ(), targetX, targetY, targetZ, width, height)) {
+                    return true;
+                }
+            }
+        }
+
         if (config.isPredictMovement() && config.getPredictionMultiplier() > 0.0) {
             double mult = config.getPredictionMultiplier();
             Vector targetVel = getVelocity(target);
@@ -129,6 +151,27 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
                 if (targetMoving && obsMoving) {
                     if (checkVisibility(worldId, startX, startY, startZ, predTargetX, predTargetY, predTargetZ, width, height)) {
                         return true;
+                    }
+                }
+
+                if (config.getF5().isEnabled()) {
+                    Vector look = eye.getDirection();
+                    double lookX = look.getX();
+                    double lookY = look.getY();
+                    double lookZ = look.getZ();
+                    double f5Dist = config.getF5().getDistance();
+                    double f5Offset = config.getF5().getCollisionOffset();
+
+                    Vector camBack = FastRaytracer.clipCamera(cacheManager, worldId, predStartX, predStartY, predStartZ, -lookX, -lookY, -lookZ, f5Dist, f5Offset);
+                    if (checkVisibility(worldId, camBack.getX(), camBack.getY(), camBack.getZ(), predTargetX, predTargetY, predTargetZ, width, height)) {
+                        return true;
+                    }
+
+                    if (config.getF5().isFrontView()) {
+                        Vector camFront = FastRaytracer.clipCamera(cacheManager, worldId, predStartX, predStartY, predStartZ, lookX, lookY, lookZ, f5Dist, f5Offset);
+                        if (checkVisibility(worldId, camFront.getX(), camFront.getY(), camFront.getZ(), predTargetX, predTargetY, predTargetZ, width, height)) {
+                            return true;
+                        }
                     }
                 }
             }
@@ -189,7 +232,8 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
             return true;
         }
 
-        if (distSq > config.getMaxDistanceSquared()) {
+        double maxDist = config.getMaxDistance() + (config.getF5().isEnabled() ? config.getF5().getDistance() : 0.0);
+        if (distSq > maxDist * maxDist) {
             return false;
         }
 
@@ -216,6 +260,27 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
             return true;
         }
 
+        if (config.getF5().isEnabled()) {
+            Vector look = eye.getDirection();
+            double lookX = look.getX();
+            double lookY = look.getY();
+            double lookZ = look.getZ();
+            double f5Dist = config.getF5().getDistance();
+            double f5Offset = config.getF5().getCollisionOffset();
+
+            Vector camBack = FastRaytracer.clipCamera(cacheManager, worldId, startX, startY, startZ, -lookX, -lookY, -lookZ, f5Dist, f5Offset);
+            if (checkVisibility(worldId, camBack.getX(), camBack.getY(), camBack.getZ(), targetX, targetY, targetZ, 0.6, height)) {
+                return true;
+            }
+
+            if (config.getF5().isFrontView()) {
+                Vector camFront = FastRaytracer.clipCamera(cacheManager, worldId, startX, startY, startZ, lookX, lookY, lookZ, f5Dist, f5Offset);
+                if (checkVisibility(worldId, camFront.getX(), camFront.getY(), camFront.getZ(), targetX, targetY, targetZ, 0.6, height)) {
+                    return true;
+                }
+            }
+        }
+
         if (config.isPredictMovement() && config.getPredictionMultiplier() > 0.0) {
             double mult = config.getPredictionMultiplier();
             Vector obsVel = getVelocity(observer);
@@ -227,6 +292,27 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
 
                 if (checkVisibility(worldId, predStartX, predStartY, predStartZ, targetX, targetY, targetZ, 0.6, height)) {
                     return true;
+                }
+
+                if (config.getF5().isEnabled()) {
+                    Vector look = eye.getDirection();
+                    double lookX = look.getX();
+                    double lookY = look.getY();
+                    double lookZ = look.getZ();
+                    double f5Dist = config.getF5().getDistance();
+                    double f5Offset = config.getF5().getCollisionOffset();
+
+                    Vector camBack = FastRaytracer.clipCamera(cacheManager, worldId, predStartX, predStartY, predStartZ, -lookX, -lookY, -lookZ, f5Dist, f5Offset);
+                    if (checkVisibility(worldId, camBack.getX(), camBack.getY(), camBack.getZ(), targetX, targetY, targetZ, 0.6, height)) {
+                        return true;
+                    }
+
+                    if (config.getF5().isFrontView()) {
+                        Vector camFront = FastRaytracer.clipCamera(cacheManager, worldId, predStartX, predStartY, predStartZ, lookX, lookY, lookZ, f5Dist, f5Offset);
+                        if (checkVisibility(worldId, camFront.getX(), camFront.getY(), camFront.getZ(), targetX, targetY, targetZ, 0.6, height)) {
+                            return true;
+                        }
+                    }
                 }
             }
         }
@@ -360,8 +446,8 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
         double dy = targetLoc.getY() - eye.getY();
         double dz = targetLoc.getZ() - eye.getZ();
         double distSq = dx * dx + dy * dy + dz * dz;
-
-        if (distSq > config.getMaxDistanceSquared()) {
+        double maxDist = config.getMaxDistance() + (config.getF5().isEnabled() ? config.getF5().getDistance() : 0.0);
+        if (distSq > maxDist * maxDist) {
             return false;
         }
 

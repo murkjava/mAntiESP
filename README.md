@@ -11,10 +11,10 @@ A blazing-fast, packet-level Anti-ESP solution for modern Minecraft servers. Bui
 
 ---
 
-## ✨ Features
-
-- **⚡ Fast 3D DDA Raytracing**: Powered by a zero-heap voxel traversal algorithm (Amanatides & Woo), minimizing JVM garbage collection overhead during intensive raycasting checks.
+## ✨ Fea- **⚡ Fast 3D DDA Raytracing**: Powered by a zero-heap voxel traversal algorithm (Amanatides & Woo), minimizing JVM garbage collection overhead during intensive raycasting checks.
+- **🎥 Third-Person Camera (F5) Support**: Accurately simulates vanilla Minecraft camera raytracing for both behind and front (selfie) views. Traces camera rays against occluding blocks and clips camera distance to prevent cheating while ensuring targets in legitimate third-person view remain visible.
 - **💾 Bit-Compressed Chunk Occlusion Cache**: Stores block transparency states in compact bitsets (~1 bit per block), avoiding expensive Bukkit/NMS chunk and block state lookups. Cache updates dynamically on block changes and chunk loading.
+- **🔍 Case-Insensitive Pattern & Keyword Block Matching**: Easily declare transparent materials by group keywords (`DOOR`, `FENCE`, `BUTTON`, `LEAVES`, `GLASS`, `SIGN`) or wildcards (`*GLASS*`, `OAK_*`) without listing dozens of individual material variations.
 - **🎯 Dynamic Multi-Point Silhouette Sampling**:
   - Casts rays toward multiple anatomical points (feet, mid-torso, head).
   - Computes dynamic horizontal tangent offsets perpendicular to the observer's viewing angle to spot players peeking around corners.
@@ -30,7 +30,7 @@ A blazing-fast, packet-level Anti-ESP solution for modern Minecraft servers. Bui
   - Hides targets when the observer is impaired by Blindness fog (`> 5 blocks`).
   - Hides targets when either player is immersed in Lava (`> 5 blocks`).
   - Glowing entities bypass occlusion checks or follow custom rules.
-- **⚙️ Hot Reloading**: Update settings on the fly with `/mantiesp reload` (or `/mansiesp reload`) with full safe entity restoration and cache rebuild.
+- **⚙️ Hot Reloading**: Update settings on the fly with `/mantiesp reload` with full safe entity restoration and cache rebuild.
 
 ---
 
@@ -39,15 +39,15 @@ A blazing-fast, packet-level Anti-ESP solution for modern Minecraft servers. Bui
 ```
                      [ Observer Player ]
                               |
-                     (Eye Raycast Point)
-                              |
               +---------------+---------------+
               |                               |
-       [ Direct Line ]               [ Predicted Tangents ]
+     (1st Person Eye Point)          (F5 Camera Raycasts)
               |                               |
-    (3D DDA FastRaytracer)          (Velocity * Multiplier)
+       [ Direct Line ]               [ Behind & Front View ]
               |                               |
-   [ Bitwise Chunk Occlusion ]      [ Corner Peek Detection ]
+     (3D DDA FastRaytracer)          (Camera Block Clipping)
+              |                               |
+   [ Bitwise Chunk Occlusion ]      [ Predicted Tangents ]
               |                               |
               +---------------+---------------+
                               |
@@ -59,12 +59,12 @@ A blazing-fast, packet-level Anti-ESP solution for modern Minecraft servers. Bui
 ```
 
 1. **Chunk Caching**: Whenever a chunk loads, solid blocks are mapped into 1-bit flags. Air, glass, bars, and other configured transparent materials are treated as non-blocking.
-2. **Periodic Check Task**: Every `ticks-period` ticks, the server scans nearby entities within `max-distance`.
+2. **Periodic Check Task**: Every `ticks-period` ticks, the server scans nearby entities within `max-distance + F5 distance`.
 3. **Early Exits**:
    - Entities closer than `min-distance` are always visible to prevent close-range pop-in.
    - Entities farther than `max-distance` are immediately hidden.
    - Bypass permissions and spectator modes are evaluated first.
-4. **Raycasting**: Multiple rays are checked using fast integer math against the chunk cache. If all points are occluded, movement prediction checks if either player's velocity will reveal them in upcoming frames.
+4. **Raycasting**: Multiple rays are checked from first-person eye and F5 camera positions against the chunk cache. If all points are occluded, movement prediction checks if either player's velocity will reveal them in upcoming frames.ity will reveal them in upcoming frames.
 
 ---
 
@@ -93,14 +93,78 @@ disabled-worlds:
   - "example_world"
 
 # Block materials considered transparent to raycasts
+# Supports exact names (ICE, BARRIER), keywords (DOOR, FENCE, LEAVES, BUTTON, GLASS), or wildcards (*GLASS*)
+# Case-insensitive (e.g. door, Door, DOOR)
 transparent-blocks:
   - "GLASS"
-  - "GLASS_PANE"
-  - "WHITE_STAINED_GLASS"
-  - "IRON_BARS"
+  - "PANE"
+  - "LEAVES"
+  - "FENCE"
+  - "GATE"
+  - "BUTTON"
+  - "PRESSURE_PLATE"
+  - "DOOR"
+  - "TRAPDOOR"
+  - "BARS"
   - "CHAIN"
+  - "ROD"
   - "ICE"
   - "BARRIER"
+  - "STRUCTURE_VOID"
+  - "LIGHT"
+  - "SCAFFOLDING"
+  - "COBWEB"
+  - "SLIME_BLOCK"
+  - "HONEY_BLOCK"
+  - "TORCH"
+  - "LANTERN"
+  - "CAMPFIRE"
+  - "CANDLE"
+  - "SIGN"
+  - "BANNER"
+  - "GRASS"
+  - "FERN"
+  - "FLOWER"
+  - "SAPLING"
+  - "VINE"
+  - "MUSHROOM"
+  - "FUNGUS"
+  - "ROOTS"
+  - "SPROUTS"
+  - "DRIPLEAF"
+  - "SEAGRASS"
+  - "KELP"
+  - "WHEAT"
+  - "CARROTS"
+  - "POTATOES"
+  - "BEETROOTS"
+  - "NETHER_WART"
+  - "SWEET_BERRY_BUSH"
+  - "SUGAR_CANE"
+  - "BAMBOO"
+  - "CACTUS"
+  - "LILY_PAD"
+  - "RAIL"
+  - "REDSTONE_WIRE"
+  - "REPEATER"
+  - "COMPARATOR"
+  - "LEVER"
+  - "TRIPWIRE"
+  - "DAYLIGHT_DETECTOR"
+  - "BELL"
+  - "ENCHANTING_TABLE"
+  - "BREWING_STAND"
+  - "CAULDRON"
+  - "LECTERN"
+  - "GRINDSTONE"
+  - "STONECUTTER"
+  - "AMETHYST"
+  - "DRIPSTONE"
+  - "POT"
+  - "HEAD"
+  - "SKULL"
+  - "BED"
+  - "CARPET"
 
 # Fine-grained hiding options
 hide:
@@ -114,11 +178,24 @@ hide:
   # Do not hide glowing entities (Spectral Arrow, Glowing effect)
   ignore-glowing: false
 
-  # Hide entities when observer has Blindness (> 5 blocks away)
+  # Hide entities when observer has Blindness
   blindness: true
+  blindness-distance: 5.0
 
-  # Hide entities when either party is submerged in lava (> 5 blocks away)
+  # Hide armor & equipment when either party is submerged in lava
   in-lava: true
+  lava-distance: 5.0
+
+# Third-person perspective (F5) camera support
+# Simulates player camera behind and in front of the player
+f5:
+  enabled: true
+  # Camera distance in blocks (vanilla Minecraft is 4.0)
+  distance: 4.0
+  # Collision offset from solid blocks (in blocks)
+  collision-offset: 0.1
+  # Check front (selfie) camera view
+  front-view: true
 
 # Hitbox expansion along X, Y, Z axes (in blocks)
 # Helps detect players slightly peeking out of corners or tiny gaps
@@ -139,9 +216,9 @@ movement-prediction:
 
 ## 💻 Commands & Permissions
 
-| Command | Aliases | Permission | Description |
-| :--- | :--- | :--- | :--- |
-| `/mantiesp reload` | `/mansiesp reload` | `mantiesp.admin` | Performs a clean reload cycle: restores all entities, reloads `config.yml`, reinitializes listeners, and rebuilds occlusion caches |
+| Command | Permission | Description |
+| :--- | :--- | :--- |
+| `/mantiesp reload` |  `mantiesp.admin` | Performs a clean reload cycle: restores all entities, reloads `config.yml`, reinitializes listeners, and rebuilds occlusion caches |
 
 ### Additional Permissions
 

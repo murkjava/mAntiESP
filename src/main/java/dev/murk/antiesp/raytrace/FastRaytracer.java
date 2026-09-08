@@ -203,13 +203,17 @@ public final class FastRaytracer {
                                     double eyeX, double eyeY, double eyeZ,
                                     double dirX, double dirY, double dirZ,
                                     double distance, double collisionOffset) {
+        if (isPositionBlocked(cacheManager, worldId, eyeX, eyeY, eyeZ)) {
+            return null;
+        }
+
         if (distance <= 0.0) {
             return new Vector(eyeX, eyeY, eyeZ);
         }
 
         double lenSq = dirX * dirX + dirY * dirY + dirZ * dirZ;
         if (lenSq < 1e-9) {
-            return new Vector(eyeX, eyeY, eyeZ);
+            return isPositionBlocked(cacheManager, worldId, eyeX, eyeY, eyeZ) ? null : new Vector(eyeX, eyeY, eyeZ);
         }
 
         if (Math.abs(lenSq - 1.0) > 1e-5) {
@@ -225,18 +229,34 @@ public final class FastRaytracer {
 
         double hitT = rayTrace(cacheManager, worldId, eyeX, eyeY, eyeZ, targetX, targetY, targetZ);
         if (hitT < 0.0) {
-            return new Vector(targetX, targetY, targetZ);
+            return isPositionBlocked(cacheManager, worldId, targetX, targetY, targetZ) ? null : new Vector(targetX, targetY, targetZ);
         }
 
         double hitDist = hitT * distance;
-        if (hitDist < 1e-4) {
-            return new Vector(eyeX, eyeY, eyeZ);
+        if (hitDist <= collisionOffset) {
+            return null;
         }
 
-        double collisionDist = Math.max(0.0, hitDist - collisionOffset);
-        return new Vector(eyeX + dirX * collisionDist,
-                          eyeY + dirY * collisionDist,
-                          eyeZ + dirZ * collisionDist);
+        double collisionDist = hitDist - collisionOffset;
+        double camX = eyeX + dirX * collisionDist;
+        double camY = eyeY + dirY * collisionDist;
+        double camZ = eyeZ + dirZ * collisionDist;
+
+        if (isPositionBlocked(cacheManager, worldId, camX, camY, camZ)) {
+            return null;
+        }
+
+        return new Vector(camX, camY, camZ);
+    }
+
+    public static boolean isPositionBlocked(ChunkCacheManager cacheManager, UUID worldId, double x, double y, double z) {
+        int bx = fastFloor(x);
+        int by = fastFloor(y);
+        int bz = fastFloor(z);
+        if (cacheManager.isOccluding(worldId, bx, by, bz)) {
+            return true;
+        }
+        return cacheManager.isBlocked(worldId, bx, by, bz, x, y, z, x, y, z);
     }
 
     private static int fastFloor(double value) {

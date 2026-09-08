@@ -99,13 +99,13 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
             double f5Offset = config.getF5().getCollisionOffset();
 
             Vector camBack = FastRaytracer.clipCamera(cacheManager, worldId, startX, startY, startZ, -lookX, -lookY, -lookZ, f5Dist, f5Offset);
-            if (checkVisibility(worldId, camBack.getX(), camBack.getY(), camBack.getZ(), targetX, targetY, targetZ, width, height)) {
+            if (camBack != null && checkVisibility(worldId, camBack.getX(), camBack.getY(), camBack.getZ(), targetX, targetY, targetZ, width, height)) {
                 return true;
             }
 
             if (config.getF5().isFrontView()) {
                 Vector camFront = FastRaytracer.clipCamera(cacheManager, worldId, startX, startY, startZ, lookX, lookY, lookZ, f5Dist, f5Offset);
-                if (checkVisibility(worldId, camFront.getX(), camFront.getY(), camFront.getZ(), targetX, targetY, targetZ, width, height)) {
+                if (camFront != null && checkVisibility(worldId, camFront.getX(), camFront.getY(), camFront.getZ(), targetX, targetY, targetZ, width, height)) {
                     return true;
                 }
             }
@@ -147,13 +147,13 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
                     double f5Offset = config.getF5().getCollisionOffset();
 
                     Vector camBack = FastRaytracer.clipCamera(cacheManager, worldId, predStartX, predStartY, predStartZ, -lookX, -lookY, -lookZ, f5Dist, f5Offset);
-                    if (checkVisibility(worldId, camBack.getX(), camBack.getY(), camBack.getZ(), predTargetX, predTargetY, predTargetZ, width, height)) {
+                    if (camBack != null && checkVisibility(worldId, camBack.getX(), camBack.getY(), camBack.getZ(), predTargetX, predTargetY, predTargetZ, width, height)) {
                         return true;
                     }
 
                     if (config.getF5().isFrontView()) {
                         Vector camFront = FastRaytracer.clipCamera(cacheManager, worldId, predStartX, predStartY, predStartZ, lookX, lookY, lookZ, f5Dist, f5Offset);
-                        if (checkVisibility(worldId, camFront.getX(), camFront.getY(), camFront.getZ(), predTargetX, predTargetY, predTargetZ, width, height)) {
+                        if (camFront != null && checkVisibility(worldId, camFront.getX(), camFront.getY(), camFront.getZ(), predTargetX, predTargetY, predTargetZ, width, height)) {
                             return true;
                         }
                     }
@@ -253,13 +253,13 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
             double f5Offset = config.getF5().getCollisionOffset();
 
             Vector camBack = FastRaytracer.clipCamera(cacheManager, worldId, startX, startY, startZ, -lookX, -lookY, -lookZ, f5Dist, f5Offset);
-            if (checkVisibility(worldId, camBack.getX(), camBack.getY(), camBack.getZ(), targetX, targetY, targetZ, 0.6, height)) {
+            if (camBack != null && checkVisibility(worldId, camBack.getX(), camBack.getY(), camBack.getZ(), targetX, targetY, targetZ, 0.6, height)) {
                 return true;
             }
 
             if (config.getF5().isFrontView()) {
                 Vector camFront = FastRaytracer.clipCamera(cacheManager, worldId, startX, startY, startZ, lookX, lookY, lookZ, f5Dist, f5Offset);
-                if (checkVisibility(worldId, camFront.getX(), camFront.getY(), camFront.getZ(), targetX, targetY, targetZ, 0.6, height)) {
+                if (camFront != null && checkVisibility(worldId, camFront.getX(), camFront.getY(), camFront.getZ(), targetX, targetY, targetZ, 0.6, height)) {
                     return true;
                 }
             }
@@ -287,13 +287,13 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
                     double f5Offset = config.getF5().getCollisionOffset();
 
                     Vector camBack = FastRaytracer.clipCamera(cacheManager, worldId, predStartX, predStartY, predStartZ, -lookX, -lookY, -lookZ, f5Dist, f5Offset);
-                    if (checkVisibility(worldId, camBack.getX(), camBack.getY(), camBack.getZ(), targetX, targetY, targetZ, 0.6, height)) {
+                    if (camBack != null && checkVisibility(worldId, camBack.getX(), camBack.getY(), camBack.getZ(), targetX, targetY, targetZ, 0.6, height)) {
                         return true;
                     }
 
                     if (config.getF5().isFrontView()) {
                         Vector camFront = FastRaytracer.clipCamera(cacheManager, worldId, predStartX, predStartY, predStartZ, lookX, lookY, lookZ, f5Dist, f5Offset);
-                        if (checkVisibility(worldId, camFront.getX(), camFront.getY(), camFront.getZ(), targetX, targetY, targetZ, 0.6, height)) {
+                        if (camFront != null && checkVisibility(worldId, camFront.getX(), camFront.getY(), camFront.getZ(), targetX, targetY, targetZ, 0.6, height)) {
                             return true;
                         }
                     }

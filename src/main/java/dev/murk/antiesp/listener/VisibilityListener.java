@@ -17,14 +17,13 @@ import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class VisibilityListener implements Listener {
-    public static final Set<UUID> CACHED_PLAYERS = new HashSet<>();
+    public static final Set<UUID> CACHED_PLAYERS = ConcurrentHashMap.newKeySet();
     public static final Map<Integer, UUID> ENTITY_TO_PLAYER = new ConcurrentHashMap<>();
 
     private final MAntiESP plugin;
@@ -48,15 +47,34 @@ public class VisibilityListener implements Listener {
         task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             plugin.getVisibilityService().updateLocations();
             double maxDistance = config.getMaxDistance() + (config.getF5().isEnabled() ? config.getF5().getDistance() : 0.0);
+            double maxDistSq = maxDistance * maxDistance;
 
-            for (UUID uuid : CACHED_PLAYERS) {
-                Player observer = Bukkit.getPlayer(uuid);
-                if (observer == null) continue;
+            if (config.isOnlyPlayer()) {
+                for (UUID uuid : CACHED_PLAYERS) {
+                    Player observer = Bukkit.getPlayer(uuid);
+                    if (observer == null) continue;
 
-                for (Entity target : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
-                    if (!config.shouldCheckEntity(target)) continue;
+                    for (UUID targetUuid : CACHED_PLAYERS) {
+                        if (uuid.equals(targetUuid)) continue;
 
-                    updateVisibility(observer, target);
+                        Player target = Bukkit.getPlayer(targetUuid);
+                        if (target == null || !observer.getWorld().equals(target.getWorld())) continue;
+
+                        if (observer.getLocation().distanceSquared(target.getLocation()) <= maxDistSq) {
+                            updateVisibility(observer, target);
+                        }
+                    }
+                }
+            } else {
+                for (UUID uuid : CACHED_PLAYERS) {
+                    Player observer = Bukkit.getPlayer(uuid);
+                    if (observer == null) continue;
+
+                    for (Entity target : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
+                        if (!config.shouldCheckEntity(target)) continue;
+
+                        updateVisibility(observer, target);
+                    }
                 }
             }
         }, 0, config.getTicksPeriod());
@@ -121,9 +139,7 @@ public class VisibilityListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(PlayerTeleportEvent e) {
-        if (e.getFrom().getWorld() == null || e.getTo().getWorld() == null) {
-            return;
-        }
+        if (e.getFrom().getWorld() == null || e.getTo().getWorld() == null) return;
 
         Player player = e.getPlayer();
         plugin.getVisibilityService().removePlayer(player.getUniqueId());
@@ -167,15 +183,29 @@ public class VisibilityListener implements Listener {
             if (!living.isValid()) return;
 
             double maxDistance = config.getMaxDistance() + (config.getF5().isEnabled() ? config.getF5().getDistance() : 0.0);
+            double maxDistSq = maxDistance * maxDistance;
+
             if (living instanceof Player observer) {
-                for (Entity target : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
-                    if (config.shouldCheckEntity(target)) {
-                        updateVisibility(observer, target);
+                if (config.isOnlyPlayer()) {
+                    for (UUID targetUuid : CACHED_PLAYERS) {
+                        if (observer.getUniqueId().equals(targetUuid)) continue;
+
+                        Player target = Bukkit.getPlayer(targetUuid);
+                        if (target == null || !observer.getWorld().equals(target.getWorld())) continue;
+
+                        if (observer.getLocation().distanceSquared(target.getLocation()) <= maxDistSq) {
+                            updateVisibility(observer, target);
+                        }
+                    }
+                } else {
+                    for (Entity target : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
+                        if (config.shouldCheckEntity(target)) {
+                            updateVisibility(observer, target);
+                        }
                     }
                 }
             }
 
-            double maxDistSq = maxDistance * maxDistance;
             for (Player observer : living.getWorld().getPlayers()) {
                 if (observer.equals(living)) continue;
 

@@ -229,22 +229,47 @@ public class VisibilityManager {
             Set<Integer> hidden = hiddenEntities.remove(observer.getUniqueId());
             Set<Integer> stripped = strippedEntities.remove(observer.getUniqueId());
 
-            double maxDistance = config.getMaxDistance() + (config.getF5().isEnabled() ? config.getF5().getDistance() : 0.0);
-
-            if (hidden != null && !hidden.isEmpty()) {
-                for (Entity entity : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
-                    if (hidden.contains(entity.getEntityId())) {
-                        PacketSender.sendAllSpawnPackets(observer, entity);
-                    }
-                }
+            if ((hidden == null || hidden.isEmpty()) && (stripped == null || stripped.isEmpty())) {
+                continue;
             }
 
-            if (stripped != null && !stripped.isEmpty()) {
-                for (Entity entity : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
-                    if (stripped.contains(entity.getEntityId())) {
-                        PacketSender.sendMetadataPacket(observer, entity);
-                        PacketSender.sendEquipmentPacket(observer, entity);
-                        PacketSender.sendPotionEffects(observer, entity);
+            double maxDistance = config.getMaxDistance() + (config.getF5().isEnabled() ? config.getF5().getDistance() : 0.0);
+            double maxDistSq = maxDistance * maxDistance;
+
+            if (config.isOnlyPlayer()) {
+                for (UUID targetUuid : VisibilityListener.CACHED_PLAYERS) {
+                    if (uuid.equals(targetUuid)) continue;
+
+                    Player target = Bukkit.getPlayer(targetUuid);
+                    if (target == null || !observer.getWorld().equals(target.getWorld())) continue;
+
+                    if (observer.getLocation().distanceSquared(target.getLocation()) <= maxDistSq) {
+                        int entityId = target.getEntityId();
+                        if (hidden != null && hidden.contains(entityId)) {
+                            PacketSender.sendAllSpawnPackets(observer, target);
+                        } else if (stripped != null && stripped.contains(entityId)) {
+                            PacketSender.sendMetadataPacket(observer, target);
+                            PacketSender.sendEquipmentPacket(observer, target);
+                            PacketSender.sendPotionEffects(observer, target);
+                        }
+                    }
+                }
+            } else {
+                if (hidden != null && !hidden.isEmpty()) {
+                    for (Entity entity : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
+                        if (hidden.contains(entity.getEntityId())) {
+                            PacketSender.sendAllSpawnPackets(observer, entity);
+                        }
+                    }
+                }
+
+                if (stripped != null && !stripped.isEmpty()) {
+                    for (Entity entity : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
+                        if (stripped.contains(entity.getEntityId())) {
+                            PacketSender.sendMetadataPacket(observer, entity);
+                            PacketSender.sendEquipmentPacket(observer, entity);
+                            PacketSender.sendPotionEffects(observer, entity);
+                        }
                     }
                 }
             }

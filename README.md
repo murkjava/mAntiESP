@@ -11,7 +11,7 @@ A blazing-fast, packet-level Anti-ESP solution for modern Minecraft servers. Bui
 
 ---
 
-## ✨ Fea- **⚡ Fast 3D DDA Raytracing**: Powered by a zero-heap voxel traversal algorithm (Amanatides & Woo), minimizing JVM garbage collection overhead during intensive raycasting checks.
+## **⚡ Fast 3D DDA Raytracing**: Powered by a zero-heap voxel traversal algorithm (Amanatides & Woo), minimizing JVM garbage collection overhead during intensive raycasting checks.
 - **🎥 Third-Person Camera (F5) Support**: Accurately simulates vanilla Minecraft camera raytracing for both behind and front (selfie) views. Traces camera rays against occluding blocks and clips camera distance to prevent cheating while ensuring targets in legitimate third-person view remain visible.
 - **💾 Bit-Compressed Chunk Occlusion Cache**: Stores block transparency states in compact bitsets (~1 bit per block), avoiding expensive Bukkit/NMS chunk and block state lookups. Cache updates dynamically on block changes and chunk loading.
 - **🔍 Case-Insensitive Pattern & Keyword Block Matching**: Easily declare transparent materials by group keywords (`DOOR`, `FENCE`, `BUTTON`, `LEAVES`, `GLASS`, `SIGN`) or wildcards (`*GLASS*`, `OAK_*`) without listing dozens of individual material variations.
@@ -83,6 +83,17 @@ only-player: true
 entities-list:
   - "player"
   - "villager"
+
+# Third-person perspective (F5) camera support
+# Simulates player camera behind and in front of the player
+f5:
+  enabled: true
+  # Camera distance in blocks (vanilla Minecraft is 4.0)
+  distance: 4.0
+  # Collision offset from solid blocks (in blocks)
+  collision-offset: 0.1
+  # Check front (selfie) camera view
+  front-view: true
 
 # Distance thresholds (in blocks)
 min-distance: 3.0   # Raytracing begins beyond this radius (closer targets stay visible)
@@ -185,17 +196,6 @@ hide:
   # Hide armor & equipment when either party is submerged in lava
   in-lava: true
   lava-distance: 5.0
-
-# Third-person perspective (F5) camera support
-# Simulates player camera behind and in front of the player
-f5:
-  enabled: true
-  # Camera distance in blocks (vanilla Minecraft is 4.0)
-  distance: 4.0
-  # Collision offset from solid blocks (in blocks)
-  collision-offset: 0.1
-  # Check front (selfie) camera view
-  front-view: true
 
 # Hitbox expansion along X, Y, Z axes (in blocks)
 # Helps detect players slightly peeking out of corners or tiny gaps

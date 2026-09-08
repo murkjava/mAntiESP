@@ -116,6 +116,7 @@ public class VisibilityManager {
                     PacketSender.sendPotionEffects(observer, target);
                 }
             }
+
             return true;
         } catch (Exception e) {
             return false;

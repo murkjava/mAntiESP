@@ -4,6 +4,7 @@ main: dev.murk.antiesp.MAntiESP
 api-version: '1.16'
 author: Murk
 description: 'AntiESP'
+depend: [packetevents]
 
 commands:
   mantiesp:

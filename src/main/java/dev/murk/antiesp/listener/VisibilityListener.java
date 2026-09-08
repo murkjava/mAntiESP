@@ -134,9 +134,7 @@ public class VisibilityListener implements Listener {
         }
 
         Bukkit.getScheduler().runTask(plugin, () -> {
-            if (!living.isValid()) {
-                return;
-            }
+            if (!living.isValid()) return;
 
             double maxDistance = config.getMaxDistance() + (config.getF5().isEnabled() ? config.getF5().getDistance() : 0.0);
             if (living instanceof Player observer) {
@@ -149,9 +147,8 @@ public class VisibilityListener implements Listener {
 
             double maxDistSq = maxDistance * maxDistance;
             for (Player observer : living.getWorld().getPlayers()) {
-                if (observer.equals(living)) {
-                    continue;
-                }
+                if (observer.equals(living)) continue;
+
                 if (observer.getLocation().distanceSquared(living.getLocation()) <= maxDistSq) {
                     if (config.shouldCheckEntity(living)) {
                         updateVisibility(observer, living);

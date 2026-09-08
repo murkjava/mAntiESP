@@ -102,9 +102,7 @@ public class VisibilityManager {
             }
 
             for (Entity target : targets) {
-                if (target == null) {
-                    continue;
-                }
+                if (target == null) continue;
 
                 int entityId = target.getEntityId();
                 boolean wasHidden = hidden != null && hidden.remove(entityId);

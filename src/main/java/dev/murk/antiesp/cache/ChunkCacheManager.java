@@ -23,26 +23,16 @@ public final class ChunkCacheManager {
 
         ChunkOcclusion occlusion = new ChunkOcclusion();
 
-        int minSection = 0;
-        int maxSection = 16;
-        try {
-            snapshot.isSectionEmpty(-4);
-            minSection = -4;
-            maxSection = 20;
-        } catch (Throwable ignored) {
-        }
+        for (int sectionY = -8; sectionY <= 31; sectionY++) {
+            int baseY = sectionY << 4;
 
-        for (int sectionY = minSection; sectionY < maxSection; sectionY++) {
             try {
-                if (snapshot.isSectionEmpty(sectionY)) {
-                    continue;
-                }
+                snapshot.getBlockData(0, baseY, 0);
             } catch (Throwable ignored) {
                 continue;
             }
 
             BitSet bitSet = null;
-            int baseY = sectionY << 4;
 
             for (int y = 0; y < 16; y++) {
                 int blockY = baseY + y;
@@ -55,7 +45,7 @@ public final class ChunkCacheManager {
                             continue;
                         }
 
-                        if (data == null) {
+                        if (data == null || data.getMaterial().isAir()) {
                             continue;
                         }
 

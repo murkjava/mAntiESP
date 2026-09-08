@@ -5,8 +5,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class ChunkOcclusion {
-    private static final int SECTION_COUNT = 32;
-    private static final int SECTION_OFFSET = 4;
+    private static final int SECTION_COUNT = 40;
+    private static final int SECTION_OFFSET = 8;
     private final BitSet[] sections = new BitSet[SECTION_COUNT];
     private final Map<Integer, BlockBox[]> customShapes = new ConcurrentHashMap<>();
 

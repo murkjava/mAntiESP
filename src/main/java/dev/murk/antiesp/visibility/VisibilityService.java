@@ -29,30 +29,18 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
     }
 
     public boolean canSee(Player observer, Entity target) {
-        if (observer == null || target == null) {
-            return false;
-        }
+        if (observer == null || target == null) return false;
 
-        if (observer.hasPermission("mantiesp.bypass")) {
-            return true;
-        }
+        if (observer.hasPermission("mantiesp.bypass")) return true;
 
-        if (config.getHide().isIgnoreSpectator() && observer.getGameMode() == GameMode.SPECTATOR) {
-            return true;
-        }
+        if (config.getHide().isIgnoreSpectator() && observer.getGameMode() == GameMode.SPECTATOR) return true;
 
         World world = observer.getWorld();
-        if (!world.equals(target.getWorld())) {
-            return false;
-        }
+        if (!world.equals(target.getWorld())) return false;
 
-        if (config.isWorldDisabled(world.getName())) {
-            return true;
-        }
+        if (config.isWorldDisabled(world.getName())) return true;
 
-        if (!config.shouldCheckEntity(target)) {
-            return true;
-        }
+        if (!config.shouldCheckEntity(target)) return true;
 
         Location eye = observer.getEyeLocation();
         Location targetLoc = target.getLocation();
@@ -69,13 +57,9 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
         }
 
         double maxDist = config.getMaxDistance() + (config.getF5().isEnabled() ? config.getF5().getDistance() : 0.0);
-        if (distSq > maxDist * maxDist) {
-            return false;
-        }
+        if (distSq > maxDist * maxDist) return false;
 
-        if (!config.getHide().isIgnoreGlowing() && isGlowing(target)) {
-            return true;
-        }
+        if (!config.getHide().isIgnoreGlowing() && isGlowing(target)) return true;
 
         if (config.getHide().isBlindness() && observer.hasPotionEffect(PotionEffectType.BLINDNESS)) {
             if (distSq > config.getHide().getBlindnessDistanceSquared()) {

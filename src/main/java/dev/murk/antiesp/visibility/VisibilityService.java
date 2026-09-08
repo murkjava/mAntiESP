@@ -471,9 +471,7 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
         }
 
         if (config.getHide().isBlindness() && observer.hasPotionEffect(PotionEffectType.BLINDNESS)) {
-            if (distSq > config.getHide().getBlindnessDistanceSquared()) {
-                return false;
-            }
+            return !(distSq > config.getHide().getBlindnessDistanceSquared());
         }
 
         return true;

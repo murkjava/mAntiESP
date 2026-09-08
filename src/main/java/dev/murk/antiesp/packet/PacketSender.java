@@ -12,6 +12,7 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEn
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityTeleport;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnEntity;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnPlayer;
 import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -21,6 +22,7 @@ import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.potion.PotionEffect;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public final class PacketSender {
@@ -38,6 +40,20 @@ public final class PacketSender {
     }
 
     public static void sendSpawnPacket(Player observer, Entity entity) {
+        if (entity instanceof Player player) {
+            Location loc = player.getLocation();
+            WrapperPlayServerSpawnPlayer packet = new WrapperPlayServerSpawnPlayer(
+                    player.getEntityId(),
+                    player.getUniqueId(),
+                    SpigotConversionUtil.fromBukkitLocation(loc).getPosition(),
+                    loc.getYaw(),
+                    loc.getPitch(),
+                    Collections.emptyList()
+            );
+            PacketEvents.getAPI().getPlayerManager().sendPacket(observer, packet);
+            return;
+        }
+
         WrapperPlayServerSpawnEntity packet = new WrapperPlayServerSpawnEntity(
                 entity.getEntityId(),
                 entity.getUniqueId(),

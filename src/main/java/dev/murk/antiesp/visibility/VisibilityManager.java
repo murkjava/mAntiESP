@@ -2,16 +2,15 @@ package dev.murk.antiesp.visibility;
 
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities;
+import dev.murk.antiesp.MAntiESP;
+import dev.murk.antiesp.config.Config;
+import dev.murk.antiesp.listener.VisibilityListener;
 import dev.murk.antiesp.packet.PacketSender;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class VisibilityManager {
@@ -221,12 +220,19 @@ public class VisibilityManager {
     }
 
     public void restoreAll() {
-        for (Player observer : Bukkit.getOnlinePlayers()) {
+        Config config = MAntiESP.getInstance().getConfiguration();
+
+        for (UUID uuid : VisibilityListener.CACHED_PLAYERS) {
+            Player observer = Bukkit.getPlayer(uuid);
+            if (observer == null) continue;
+
             Set<Integer> hidden = hiddenEntities.remove(observer.getUniqueId());
             Set<Integer> stripped = strippedEntities.remove(observer.getUniqueId());
 
+            double maxDistance = config.getMaxDistance() + (config.getF5().isEnabled() ? config.getF5().getDistance() : 0.0);
+
             if (hidden != null && !hidden.isEmpty()) {
-                for (Entity entity : observer.getNearbyEntities(128, 128, 128)) {
+                for (Entity entity : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
                     if (hidden.contains(entity.getEntityId())) {
                         PacketSender.sendAllSpawnPackets(observer, entity);
                     }
@@ -234,7 +240,7 @@ public class VisibilityManager {
             }
 
             if (stripped != null && !stripped.isEmpty()) {
-                for (Entity entity : observer.getNearbyEntities(128, 128, 128)) {
+                for (Entity entity : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
                     if (stripped.contains(entity.getEntityId())) {
                         PacketSender.sendMetadataPacket(observer, entity);
                         PacketSender.sendEquipmentPacket(observer, entity);

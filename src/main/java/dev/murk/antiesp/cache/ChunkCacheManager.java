@@ -27,7 +27,9 @@ public final class ChunkCacheManager {
             int baseY = sectionY << 4;
 
             try {
-                snapshot.getBlockData(0, baseY, 0);
+                if (snapshot.isSectionEmpty(sectionY)) {
+                    continue;
+                }
             } catch (Throwable ignored) {
                 continue;
             }
@@ -72,6 +74,10 @@ public final class ChunkCacheManager {
 
         Map<Long, ChunkOcclusion> cache = worldCaches.computeIfAbsent(worldId, k -> new ConcurrentHashMap<>());
         cache.put(chunkKey, occlusion);
+    }
+
+    public Map<Long, ChunkOcclusion> getWorldCache(UUID worldId) {
+        return worldCaches.get(worldId);
     }
 
     public void unloadChunk(UUID worldId, int chunkX, int chunkZ) {

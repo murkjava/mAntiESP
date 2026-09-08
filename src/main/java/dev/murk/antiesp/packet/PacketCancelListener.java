@@ -8,6 +8,7 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 import dev.murk.antiesp.MAntiESP;
 import dev.murk.antiesp.config.Config;
+import dev.murk.antiesp.listener.VisibilityListener;
 import dev.murk.antiesp.visibility.VisibilityManager;
 import dev.murk.antiesp.visibility.VisibilityService;
 import org.bukkit.Bukkit;
@@ -237,16 +238,13 @@ public class PacketCancelListener extends PacketListenerAbstract {
     private Player findOnlinePlayer(UUID uuid, int entityId) {
         if (uuid != null) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null) {
-                return player;
-            }
+            if (player != null) return player;
         }
+
         if (entityId != -1) {
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                if (player.getEntityId() == entityId) {
-                    return player;
-                }
-            }
+            UUID playerUuid = VisibilityListener.ENTITY_TO_PLAYER.get(entityId);
+            if (playerUuid != null)
+                return Bukkit.getPlayer(playerUuid);
         }
         return null;
     }

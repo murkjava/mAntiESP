@@ -2,7 +2,9 @@ package dev.murk.antiesp.visibility;
 
 import dev.murk.antiesp.cache.ChunkCacheManager;
 import dev.murk.antiesp.config.Config;
+import dev.murk.antiesp.listener.VisibilityListener;
 import dev.murk.antiesp.raytrace.FastRaytracer;
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -401,7 +403,10 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
     }
 
     public void updateLocations() {
-        for (Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
+        for (UUID uuid : VisibilityListener.CACHED_PLAYERS) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null) continue;
+
             Location current = player.getLocation();
             Location last = lastLocations.put(player.getUniqueId(), current);
             if (last != null && last.getWorld() != null && last.getWorld().equals(current.getWorld())) {

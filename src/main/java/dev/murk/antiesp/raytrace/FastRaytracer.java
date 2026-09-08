@@ -1,8 +1,10 @@
 package dev.murk.antiesp.raytrace;
 
 import dev.murk.antiesp.cache.ChunkCacheManager;
+import dev.murk.antiesp.cache.ChunkOcclusion;
 import org.bukkit.util.Vector;
 
+import java.util.Map;
 import java.util.UUID;
 
 public final class FastRaytracer {
@@ -10,9 +12,51 @@ public final class FastRaytracer {
     private FastRaytracer() {
     }
 
+    private static final class ChunkAccessor {
+        private final Map<Long, ChunkOcclusion> worldCache;
+        private long lastKey = Long.MIN_VALUE;
+        private ChunkOcclusion lastChunk = null;
+
+        ChunkAccessor(Map<Long, ChunkOcclusion> worldCache) {
+            this.worldCache = worldCache;
+        }
+
+        public boolean isBlocked(int x, int y, int z, double x0, double y0, double z0, double x1, double y1, double z1) {
+            if (worldCache == null) return false;
+            long key = ChunkCacheManager.getChunkKey(x >> 4, z >> 4);
+            if (key != lastKey) {
+                lastKey = key;
+                lastChunk = worldCache.get(key);
+            }
+            return lastChunk != null && lastChunk.isBlocked(x, y, z, x0, y0, z0, x1, y1, z1);
+        }
+
+        public double clip(int x, int y, int z, double x0, double y0, double z0, double x1, double y1, double z1) {
+            if (worldCache == null) return -1.0;
+            long key = ChunkCacheManager.getChunkKey(x >> 4, z >> 4);
+            if (key != lastKey) {
+                lastKey = key;
+                lastChunk = worldCache.get(key);
+            }
+            return lastChunk != null ? lastChunk.clip(x, y, z, x0, y0, z0, x1, y1, z1) : -1.0;
+        }
+
+        public boolean isOccluding(int x, int y, int z) {
+            if (worldCache == null) return false;
+            long key = ChunkCacheManager.getChunkKey(x >> 4, z >> 4);
+            if (key != lastKey) {
+                lastKey = key;
+                lastChunk = worldCache.get(key);
+            }
+            return lastChunk != null && lastChunk.isOccluding(x, y, z);
+        }
+    }
+
     public static boolean canSee(ChunkCacheManager cacheManager, UUID worldId,
                                  double x0, double y0, double z0,
                                  double x1, double y1, double z1) {
+        ChunkAccessor accessor = new ChunkAccessor(cacheManager.getWorldCache(worldId));
+
         double dx = x1 - x0;
         double dy = y1 - y0;
         double dz = z1 - z0;
@@ -75,7 +119,7 @@ public final class FastRaytracer {
         int maxSteps = Math.abs(endX - currentX) + Math.abs(endY - currentY) + Math.abs(endZ - currentZ) + 1;
 
         for (int step = 0; step < maxSteps; step++) {
-            if (step > 0 && cacheManager.isBlocked(worldId, currentX, currentY, currentZ, x0, y0, z0, x1, y1, z1)) {
+            if (step > 0 && accessor.isBlocked(currentX, currentY, currentZ, x0, y0, z0, x1, y1, z1)) {
                 return false;
             }
 
@@ -89,8 +133,8 @@ public final class FastRaytracer {
             boolean advanceZ = Math.abs(tMaxZ - minT) < 1e-6;
 
             if (advanceX && advanceZ && !advanceY) {
-                if (cacheManager.isBlocked(worldId, currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1)
-                        || cacheManager.isBlocked(worldId, currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1)) {
+                if (accessor.isBlocked(currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1)
+                        || accessor.isBlocked(currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1)) {
                     return false;
                 }
                 currentX += stepX;
@@ -98,8 +142,8 @@ public final class FastRaytracer {
                 currentZ += stepZ;
                 tMaxZ += tDeltaZ;
             } else if (advanceX && advanceY && !advanceZ) {
-                if (cacheManager.isBlocked(worldId, currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1)
-                        || cacheManager.isBlocked(worldId, currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1)) {
+                if (accessor.isBlocked(currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1)
+                        || accessor.isBlocked(currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1)) {
                     return false;
                 }
                 currentX += stepX;
@@ -107,8 +151,8 @@ public final class FastRaytracer {
                 currentY += stepY;
                 tMaxY += tDeltaY;
             } else if (advanceY && advanceZ && !advanceX) {
-                if (cacheManager.isBlocked(worldId, currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1)
-                        || cacheManager.isBlocked(worldId, currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1)) {
+                if (accessor.isBlocked(currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1)
+                        || accessor.isBlocked(currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1)) {
                     return false;
                 }
                 currentY += stepY;
@@ -116,9 +160,9 @@ public final class FastRaytracer {
                 currentZ += stepZ;
                 tMaxZ += tDeltaZ;
             } else if (advanceX && advanceY && advanceZ) {
-                if (cacheManager.isBlocked(worldId, currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1)
-                        || cacheManager.isBlocked(worldId, currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1)
-                        || cacheManager.isBlocked(worldId, currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1)) {
+                if (accessor.isBlocked(currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1)
+                        || accessor.isBlocked(currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1)
+                        || accessor.isBlocked(currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1)) {
                     return false;
                 }
                 currentX += stepX;
@@ -145,6 +189,8 @@ public final class FastRaytracer {
     public static double rayTrace(ChunkCacheManager cacheManager, UUID worldId,
                                   double x0, double y0, double z0,
                                   double x1, double y1, double z1) {
+        ChunkAccessor accessor = new ChunkAccessor(cacheManager.getWorldCache(worldId));
+
         double dx = x1 - x0;
         double dy = y1 - y0;
         double dz = z1 - z0;
@@ -204,7 +250,7 @@ public final class FastRaytracer {
 
         for (int step = 0; step < maxSteps; step++) {
             if (step > 0) {
-                double t = cacheManager.clip(worldId, currentX, currentY, currentZ, x0, y0, z0, x1, y1, z1);
+                double t = accessor.clip(currentX, currentY, currentZ, x0, y0, z0, x1, y1, z1);
                 if (t >= 0.0) {
                     return t;
                 }
@@ -220,8 +266,8 @@ public final class FastRaytracer {
             boolean advanceZ = Math.abs(tMaxZ - minT) < 1e-6;
 
             if (advanceX && advanceZ && !advanceY) {
-                double t1 = cacheManager.clip(worldId, currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1);
-                double t2 = cacheManager.clip(worldId, currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1);
+                double t1 = accessor.clip(currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1);
+                double t2 = accessor.clip(currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1);
                 if (t1 >= 0.0 && t2 >= 0.0) {
                     return Math.min(t1, t2);
                 } else if (t1 >= 0.0) {
@@ -234,8 +280,8 @@ public final class FastRaytracer {
                 currentZ += stepZ;
                 tMaxZ += tDeltaZ;
             } else if (advanceX && advanceY && !advanceZ) {
-                double t1 = cacheManager.clip(worldId, currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1);
-                double t2 = cacheManager.clip(worldId, currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1);
+                double t1 = accessor.clip(currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1);
+                double t2 = accessor.clip(currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1);
                 if (t1 >= 0.0 && t2 >= 0.0) {
                     return Math.min(t1, t2);
                 } else if (t1 >= 0.0) {
@@ -248,8 +294,8 @@ public final class FastRaytracer {
                 currentY += stepY;
                 tMaxY += tDeltaY;
             } else if (advanceY && advanceZ && !advanceX) {
-                double t1 = cacheManager.clip(worldId, currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1);
-                double t2 = cacheManager.clip(worldId, currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1);
+                double t1 = accessor.clip(currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1);
+                double t2 = accessor.clip(currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1);
                 if (t1 >= 0.0 && t2 >= 0.0) {
                     return Math.min(t1, t2);
                 } else if (t1 >= 0.0) {
@@ -262,9 +308,9 @@ public final class FastRaytracer {
                 currentZ += stepZ;
                 tMaxZ += tDeltaZ;
             } else if (advanceX && advanceY && advanceZ) {
-                double t1 = cacheManager.clip(worldId, currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1);
-                double t2 = cacheManager.clip(worldId, currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1);
-                double t3 = cacheManager.clip(worldId, currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1);
+                double t1 = accessor.clip(currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1);
+                double t2 = accessor.clip(currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1);
+                double t3 = accessor.clip(currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1);
                 double minFound = -1.0;
                 if (t1 >= 0.0) minFound = (minFound < 0.0) ? t1 : Math.min(minFound, t1);
                 if (t2 >= 0.0) minFound = (minFound < 0.0) ? t2 : Math.min(minFound, t2);
@@ -347,10 +393,11 @@ public final class FastRaytracer {
         int bx = fastFloor(x);
         int by = fastFloor(y);
         int bz = fastFloor(z);
-        if (cacheManager.isOccluding(worldId, bx, by, bz)) {
+        ChunkAccessor accessor = new ChunkAccessor(cacheManager.getWorldCache(worldId));
+        if (accessor.isOccluding(bx, by, bz)) {
             return true;
         }
-        return cacheManager.isBlocked(worldId, bx, by, bz, x, y, z, x, y, z);
+        return accessor.isBlocked(bx, by, bz, x, y, z, x, y, z);
     }
 
     private static int fastFloor(double value) {

@@ -75,30 +75,67 @@ public final class FastRaytracer {
         int maxSteps = Math.abs(endX - currentX) + Math.abs(endY - currentY) + Math.abs(endZ - currentZ) + 1;
 
         for (int step = 0; step < maxSteps; step++) {
-            if (currentX == endX && currentY == endY && currentZ == endZ) {
-                return true;
-            }
-
             if (step > 0 && cacheManager.isBlocked(worldId, currentX, currentY, currentZ, x0, y0, z0, x1, y1, z1)) {
                 return false;
             }
 
-            if (tMaxX < tMaxY) {
-                if (tMaxX < tMaxZ) {
-                    currentX += stepX;
-                    tMaxX += tDeltaX;
-                } else {
-                    currentZ += stepZ;
-                    tMaxZ += tDeltaZ;
+            if (currentX == endX && currentY == endY && currentZ == endZ) {
+                return true;
+            }
+
+            double minT = Math.min(tMaxX, Math.min(tMaxY, tMaxZ));
+            boolean advanceX = Math.abs(tMaxX - minT) < 1e-6;
+            boolean advanceY = Math.abs(tMaxY - minT) < 1e-6;
+            boolean advanceZ = Math.abs(tMaxZ - minT) < 1e-6;
+
+            if (advanceX && advanceZ && !advanceY) {
+                if (cacheManager.isBlocked(worldId, currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1)
+                        || cacheManager.isBlocked(worldId, currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1)) {
+                    return false;
                 }
+                currentX += stepX;
+                tMaxX += tDeltaX;
+                currentZ += stepZ;
+                tMaxZ += tDeltaZ;
+            } else if (advanceX && advanceY && !advanceZ) {
+                if (cacheManager.isBlocked(worldId, currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1)
+                        || cacheManager.isBlocked(worldId, currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1)) {
+                    return false;
+                }
+                currentX += stepX;
+                tMaxX += tDeltaX;
+                currentY += stepY;
+                tMaxY += tDeltaY;
+            } else if (advanceY && advanceZ && !advanceX) {
+                if (cacheManager.isBlocked(worldId, currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1)
+                        || cacheManager.isBlocked(worldId, currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1)) {
+                    return false;
+                }
+                currentY += stepY;
+                tMaxY += tDeltaY;
+                currentZ += stepZ;
+                tMaxZ += tDeltaZ;
+            } else if (advanceX && advanceY && advanceZ) {
+                if (cacheManager.isBlocked(worldId, currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1)
+                        || cacheManager.isBlocked(worldId, currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1)
+                        || cacheManager.isBlocked(worldId, currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1)) {
+                    return false;
+                }
+                currentX += stepX;
+                tMaxX += tDeltaX;
+                currentY += stepY;
+                tMaxY += tDeltaY;
+                currentZ += stepZ;
+                tMaxZ += tDeltaZ;
+            } else if (advanceX) {
+                currentX += stepX;
+                tMaxX += tDeltaX;
+            } else if (advanceY) {
+                currentY += stepY;
+                tMaxY += tDeltaY;
             } else {
-                if (tMaxY < tMaxZ) {
-                    currentY += stepY;
-                    tMaxY += tDeltaY;
-                } else {
-                    currentZ += stepZ;
-                    tMaxZ += tDeltaZ;
-                }
+                currentZ += stepZ;
+                tMaxZ += tDeltaZ;
             }
         }
 
@@ -177,22 +214,79 @@ public final class FastRaytracer {
                 break;
             }
 
-            if (tMaxX < tMaxY) {
-                if (tMaxX < tMaxZ) {
-                    currentX += stepX;
-                    tMaxX += tDeltaX;
-                } else {
-                    currentZ += stepZ;
-                    tMaxZ += tDeltaZ;
+            double minT = Math.min(tMaxX, Math.min(tMaxY, tMaxZ));
+            boolean advanceX = Math.abs(tMaxX - minT) < 1e-6;
+            boolean advanceY = Math.abs(tMaxY - minT) < 1e-6;
+            boolean advanceZ = Math.abs(tMaxZ - minT) < 1e-6;
+
+            if (advanceX && advanceZ && !advanceY) {
+                double t1 = cacheManager.clip(worldId, currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1);
+                double t2 = cacheManager.clip(worldId, currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1);
+                if (t1 >= 0.0 && t2 >= 0.0) {
+                    return Math.min(t1, t2);
+                } else if (t1 >= 0.0) {
+                    return t1;
+                } else if (t2 >= 0.0) {
+                    return t2;
                 }
+                currentX += stepX;
+                tMaxX += tDeltaX;
+                currentZ += stepZ;
+                tMaxZ += tDeltaZ;
+            } else if (advanceX && advanceY && !advanceZ) {
+                double t1 = cacheManager.clip(worldId, currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1);
+                double t2 = cacheManager.clip(worldId, currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1);
+                if (t1 >= 0.0 && t2 >= 0.0) {
+                    return Math.min(t1, t2);
+                } else if (t1 >= 0.0) {
+                    return t1;
+                } else if (t2 >= 0.0) {
+                    return t2;
+                }
+                currentX += stepX;
+                tMaxX += tDeltaX;
+                currentY += stepY;
+                tMaxY += tDeltaY;
+            } else if (advanceY && advanceZ && !advanceX) {
+                double t1 = cacheManager.clip(worldId, currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1);
+                double t2 = cacheManager.clip(worldId, currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1);
+                if (t1 >= 0.0 && t2 >= 0.0) {
+                    return Math.min(t1, t2);
+                } else if (t1 >= 0.0) {
+                    return t1;
+                } else if (t2 >= 0.0) {
+                    return t2;
+                }
+                currentY += stepY;
+                tMaxY += tDeltaY;
+                currentZ += stepZ;
+                tMaxZ += tDeltaZ;
+            } else if (advanceX && advanceY && advanceZ) {
+                double t1 = cacheManager.clip(worldId, currentX + stepX, currentY, currentZ, x0, y0, z0, x1, y1, z1);
+                double t2 = cacheManager.clip(worldId, currentX, currentY + stepY, currentZ, x0, y0, z0, x1, y1, z1);
+                double t3 = cacheManager.clip(worldId, currentX, currentY, currentZ + stepZ, x0, y0, z0, x1, y1, z1);
+                double minFound = -1.0;
+                if (t1 >= 0.0) minFound = (minFound < 0.0) ? t1 : Math.min(minFound, t1);
+                if (t2 >= 0.0) minFound = (minFound < 0.0) ? t2 : Math.min(minFound, t2);
+                if (t3 >= 0.0) minFound = (minFound < 0.0) ? t3 : Math.min(minFound, t3);
+                if (minFound >= 0.0) {
+                    return minFound;
+                }
+                currentX += stepX;
+                tMaxX += tDeltaX;
+                currentY += stepY;
+                tMaxY += tDeltaY;
+                currentZ += stepZ;
+                tMaxZ += tDeltaZ;
+            } else if (advanceX) {
+                currentX += stepX;
+                tMaxX += tDeltaX;
+            } else if (advanceY) {
+                currentY += stepY;
+                tMaxY += tDeltaY;
             } else {
-                if (tMaxY < tMaxZ) {
-                    currentY += stepY;
-                    tMaxY += tDeltaY;
-                } else {
-                    currentZ += stepZ;
-                    tMaxZ += tDeltaZ;
-                }
+                currentZ += stepZ;
+                tMaxZ += tDeltaZ;
             }
         }
 

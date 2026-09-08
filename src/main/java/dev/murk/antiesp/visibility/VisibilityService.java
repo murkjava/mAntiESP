@@ -50,10 +50,8 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
         double dz = targetLoc.getZ() - eye.getZ();
         double distSq = dx * dx + dy * dy + dz * dz;
 
-        if (distSq <= config.getMinDistanceSquared()) {
-            if (!(target instanceof Player player && player.isSneaking())) {
-                return true;
-            }
+        if (distSq <= 0.04) {
+            return true;
         }
 
         double maxDist = config.getMaxDistance() + (config.getF5().isEnabled() ? config.getF5().getDistance() : 0.0);
@@ -85,6 +83,14 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
         double startY = eye.getY();
         double startZ = eye.getZ();
         UUID worldId = world.getUID();
+
+        if (distSq <= config.getMinDistanceSquared()) {
+            if (!(target instanceof Player player && player.isSneaking())) {
+                if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX, targetY + (height * 0.5), targetZ)) {
+                    return true;
+                }
+            }
+        }
 
         if (checkVisibility(worldId, startX, startY, startZ, targetX, targetY, targetZ, width, height)) {
             return true;
@@ -124,9 +130,21 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
                 double predStartY = startY + (obsMoving ? obsVel.getY() * mult : 0.0);
                 double predStartZ = startZ + (obsMoving ? obsVel.getZ() * mult : 0.0);
 
+                if (obsMoving && !FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, predStartX, predStartY, predStartZ)) {
+                    predStartX = startX;
+                    predStartY = startY;
+                    predStartZ = startZ;
+                }
+
                 double predTargetX = targetX + (targetMoving ? targetVel.getX() * mult : 0.0);
                 double predTargetY = targetY + (targetMoving ? targetVel.getY() * mult : 0.0);
                 double predTargetZ = targetZ + (targetMoving ? targetVel.getZ() * mult : 0.0);
+
+                if (targetMoving && !FastRaytracer.canSee(cacheManager, worldId, targetX, targetY, targetZ, predTargetX, predTargetY, predTargetZ)) {
+                    predTargetX = targetX;
+                    predTargetY = targetY;
+                    predTargetZ = targetZ;
+                }
 
                 if (checkVisibility(worldId, predStartX, predStartY, predStartZ, predTargetX, predTargetY, predTargetZ, width, height)) {
                     return true;
@@ -212,7 +230,7 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
         double dz = targetZ - eye.getZ();
         double distSq = dx * dx + dy * dy + dz * dz;
 
-        if (distSq <= config.getMinDistanceSquared()) {
+        if (distSq <= 0.04) {
             return true;
         }
 
@@ -239,6 +257,12 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
         double startY = eye.getY();
         double startZ = eye.getZ();
         UUID worldId = world.getUID();
+
+        if (distSq <= config.getMinDistanceSquared()) {
+            if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX, targetY + (height * 0.5), targetZ)) {
+                return true;
+            }
+        }
 
         if (checkVisibility(worldId, startX, startY, startZ, targetX, targetY, targetZ, 0.6, height)) {
             return true;
@@ -273,6 +297,12 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
                 double predStartX = startX + obsVel.getX() * mult;
                 double predStartY = startY + obsVel.getY() * mult;
                 double predStartZ = startZ + obsVel.getZ() * mult;
+
+                if (!FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, predStartX, predStartY, predStartZ)) {
+                    predStartX = startX;
+                    predStartY = startY;
+                    predStartZ = startZ;
+                }
 
                 if (checkVisibility(worldId, predStartX, predStartY, predStartZ, targetX, targetY, targetZ, 0.6, height)) {
                     return true;

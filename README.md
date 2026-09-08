@@ -281,7 +281,7 @@ All core design decisions, business logic, algorithmic choices, test suites, and
 
 ### Compile & Package
 ```bash
-git clone https://github.com/<your-username>/mAntiESP.git
+git clone https://github.com/murkjava/mAntiESP.git
 cd mAntiESP
 mvn clean package
 ```

@@ -118,6 +118,7 @@ transparent-blocks:
   - "SKULL"
   - "BED"
   - "CARPET"
+  - "VINE"
 
 # дополнительные настройки скрытия
 hide:

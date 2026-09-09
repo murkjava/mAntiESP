@@ -346,8 +346,9 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
 
         double midY = targetY + (height * 0.5);
         double topY = targetY + (height * 0.85) + expY;
-        double lowY = targetY + (height * 0.2);
+        double waistY = targetY + (height * 0.38);
         double chestY = targetY + (height * 0.7);
+        double lowY = targetY + (height * 0.2);
         double feetY = targetY + Math.max(0.05, 0.1);
 
         if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX, midY, targetZ)) {
@@ -358,11 +359,15 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
             return true;
         }
 
-        if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX, lowY, targetZ)) {
+        if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX, waistY, targetZ)) {
             return true;
         }
 
         if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX, chestY, targetZ)) {
+            return true;
+        }
+
+        if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX, lowY, targetZ)) {
             return true;
         }
 
@@ -381,6 +386,8 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
             double radius = (width * 0.5) + Math.max(expX, expZ);
             double offX = nX * radius;
             double offZ = nZ * radius;
+            double halfOffX = offX * 0.5;
+            double halfOffZ = offZ * 0.5;
             double frontX = -uX * radius;
             double frontZ = -uZ * radius;
 
@@ -392,11 +399,43 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
                 return true;
             }
 
+            if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX + halfOffX, midY, targetZ + halfOffZ)) {
+                return true;
+            }
+
+            if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX - halfOffX, midY, targetZ - halfOffZ)) {
+                return true;
+            }
+
+            if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX + offX, waistY, targetZ + offZ)) {
+                return true;
+            }
+
+            if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX - offX, waistY, targetZ - offZ)) {
+                return true;
+            }
+
+            if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX + halfOffX, waistY, targetZ + halfOffZ)) {
+                return true;
+            }
+
+            if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX - halfOffX, waistY, targetZ - halfOffZ)) {
+                return true;
+            }
+
             if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX + offX, topY, targetZ + offZ)) {
                 return true;
             }
 
             if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX - offX, topY, targetZ - offZ)) {
+                return true;
+            }
+
+            if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX + halfOffX, topY, targetZ + halfOffZ)) {
+                return true;
+            }
+
+            if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX - halfOffX, topY, targetZ - halfOffZ)) {
                 return true;
             }
 
@@ -409,6 +448,10 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
             }
 
             if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX + frontX, midY, targetZ + frontZ)) {
+                return true;
+            }
+
+            if (FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, targetX + frontX, waistY, targetZ + frontZ)) {
                 return true;
             }
 

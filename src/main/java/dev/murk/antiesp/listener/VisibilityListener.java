@@ -84,8 +84,7 @@ public class VisibilityListener implements Listener {
 
             if (config.isOnlyPlayer()) {
                 Map<UUID, Map<Long, List<PlayerSnapshot>>> grid = new HashMap<>();
-                for (int i = 0; i < snapshots.size(); i++) {
-                    PlayerSnapshot s = snapshots.get(i);
+                for (PlayerSnapshot s : snapshots) {
                     long cellKey = (((long) s.cellX) << 32) | (s.cellZ & 0xFFFFFFFFL);
                     grid.computeIfAbsent(s.worldId, k -> new HashMap<>())
                             .computeIfAbsent(cellKey, k -> new ArrayList<>(4))
@@ -94,8 +93,7 @@ public class VisibilityListener implements Listener {
 
                 int cellRadius = (int) Math.ceil(maxDistance / 64.0);
 
-                for (int i = 0; i < snapshots.size(); i++) {
-                    PlayerSnapshot observer = snapshots.get(i);
+                for (PlayerSnapshot observer : snapshots) {
                     boolean hasBypass = observer.player.hasPermission("mantiesp.bypass")
                             || (config.getHide().isIgnoreSpectator() && observer.player.getGameMode() == GameMode.SPECTATOR);
 
@@ -121,8 +119,7 @@ public class VisibilityListener implements Listener {
                             List<PlayerSnapshot> targets = worldGrid.get(key);
                             if (targets == null) continue;
 
-                            for (int t = 0; t < targets.size(); t++) {
-                                PlayerSnapshot target = targets.get(t);
+                            for (PlayerSnapshot target : targets) {
                                 if (target.player == observer.player) continue;
 
                                 double dx = target.x - observer.x;
@@ -136,8 +133,7 @@ public class VisibilityListener implements Listener {
                     }
                 }
             } else {
-                for (int i = 0; i < snapshots.size(); i++) {
-                    PlayerSnapshot observer = snapshots.get(i);
+                for (PlayerSnapshot observer : snapshots) {
                     boolean hasBypass = observer.player.hasPermission("mantiesp.bypass")
                             || (config.getHide().isIgnoreSpectator() && observer.player.getGameMode() == GameMode.SPECTATOR);
 

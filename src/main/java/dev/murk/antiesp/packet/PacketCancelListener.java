@@ -39,6 +39,14 @@ public class PacketCancelListener extends PacketListenerAbstract {
             return;
         }
 
+        if (config.isWorldDisabled(observer.getWorld().getName())) {
+            return;
+        }
+
+        if (observer.hasPermission("mantiesp.bypass") || (config.getHide().isIgnoreSpectator() && observer.getGameMode() == org.bukkit.GameMode.SPECTATOR)) {
+            return;
+        }
+
         if (checkBeforeSpawnPacket(event, observer)) {
             return;
         }

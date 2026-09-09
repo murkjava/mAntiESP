@@ -1,5 +1,9 @@
 package dev.murk.antiesp.cache;
 
+import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
+import com.github.retrooper.packetevents.protocol.world.chunk.Column;
+import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
+import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
@@ -14,6 +18,81 @@ public final class ChunkCacheManager {
 
     public static long getChunkKey(int chunkX, int chunkZ) {
         return ((long) chunkX << 32) | (chunkZ & 0xFFFFFFFFL);
+    }
+
+    public void processColumn(UUID worldId, Column column) {
+        if (column == null) {
+            return;
+        }
+
+        int chunkX = column.getX();
+        int chunkZ = column.getZ();
+        long chunkKey = getChunkKey(chunkX, chunkZ);
+        BaseChunk[] sections = column.getChunks();
+        if (sections == null) {
+            return;
+        }
+
+        ChunkOcclusion occlusion = new ChunkOcclusion();
+
+        for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
+            BaseChunk section = sections[sectionIndex];
+            if (section == null || section.isEmpty()) {
+                continue;
+            }
+
+            int sectionY = sectionIndex;
+            int baseY = sectionY << 4;
+            BitSet bitSet = null;
+
+            for (int y = 0; y < 16; y++) {
+                int blockY = baseY + y;
+                for (int z = 0; z < 16; z++) {
+                    for (int x = 0; x < 16; x++) {
+                        int blockId = section.getBlockId(x, y, z);
+                        if (blockId == 0) {
+                            continue;
+                        }
+
+                        WrappedBlockState state = WrappedBlockState.getByGlobalId(blockId);
+                        if (state == null) {
+                            continue;
+                        }
+
+                        BlockData data;
+                        try {
+                            data = SpigotConversionUtil.toBukkitBlockData(state);
+                        } catch (Throwable ignored) {
+                            continue;
+                        }
+
+                        if (data == null || data.getMaterial().isAir()) {
+                            continue;
+                        }
+
+                        if (MaterialClassifier.isFullOccluding(data)) {
+                            if (bitSet == null) {
+                                bitSet = new BitSet(4096);
+                            }
+                            int index = (y << 8) | (z << 4) | x;
+                            bitSet.set(index);
+                        } else {
+                            BlockBox[] custom = MaterialClassifier.getCustomBoxes(data);
+                            if (custom != null) {
+                                occlusion.setCustomShape(x, blockY, z, custom);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (bitSet != null) {
+                occlusion.setSection(sectionY, bitSet);
+            }
+        }
+
+        Map<Long, ChunkOcclusion> cache = worldCaches.computeIfAbsent(worldId, k -> new ConcurrentHashMap<>());
+        cache.put(chunkKey, occlusion);
     }
 
     public void processChunkSnapshot(UUID worldId, ChunkSnapshot snapshot) {
@@ -135,6 +214,28 @@ public final class ChunkCacheManager {
         }
 
         return chunk.clip(x, y, z, x0, y0, z0, x1, y1, z1);
+    }
+
+    public void setBlock(UUID worldId, int x, int y, int z, int blockId) {
+        if (blockId == 0) {
+            removeBlock(worldId, x, y, z);
+            return;
+        }
+
+        WrappedBlockState state = WrappedBlockState.getByGlobalId(blockId);
+        if (state == null) {
+            removeBlock(worldId, x, y, z);
+            return;
+        }
+
+        BlockData data;
+        try {
+            data = SpigotConversionUtil.toBukkitBlockData(state);
+        } catch (Throwable ignored) {
+            return;
+        }
+
+        setBlock(worldId, x, y, z, data);
     }
 
     public void setBlock(UUID worldId, int x, int y, int z, BlockData data) {

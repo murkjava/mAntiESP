@@ -223,7 +223,9 @@ public class VisibilityManager {
     }
 
     public void restoreFor(Player observer) {
-        if (observer == null) return;
+        if (observer == null || !observer.isOnline()) {
+            return;
+        }
 
         Set<Integer> hidden = hiddenEntities.remove(observer.getUniqueId());
         Set<Integer> stripped = strippedEntities.remove(observer.getUniqueId());
@@ -232,31 +234,31 @@ public class VisibilityManager {
             return;
         }
 
-        Config config = MAntiESP.getInstance().getConfiguration();
-        double maxDistance = config.getMaxDistance() + (config.getF5().isEnabled() ? config.getF5().getDistance() : 0.0);
-        double maxDistSq = maxDistance * maxDistance;
-
-        if (config.isOnlyPlayer()) {
-            for (UUID targetUuid : VisibilityListener.CACHED_PLAYERS) {
-                if (observer.getUniqueId().equals(targetUuid)) continue;
-
-                Player target = Bukkit.getPlayer(targetUuid);
-                if (target == null || !observer.getWorld().equals(target.getWorld())) continue;
-
-                if (observer.getLocation().distanceSquared(target.getLocation()) <= maxDistSq) {
-                    int entityId = target.getEntityId();
-                    if (hidden != null && hidden.contains(entityId)) {
-                        PacketSender.sendAllSpawnPackets(observer, target);
-                    } else if (stripped != null && stripped.contains(entityId)) {
-                        PacketSender.sendMetadataPacket(observer, target);
-                        PacketSender.sendEquipmentPacket(observer, target);
-                        PacketSender.sendPotionEffects(observer, target);
-                    }
-                }
+        for (Player target : Bukkit.getOnlinePlayers()) {
+            if (observer.equals(target)) {
+                continue;
             }
-        } else {
+            if (!observer.getWorld().equals(target.getWorld())) {
+                continue;
+            }
+
+            int entityId = target.getEntityId();
+            if (hidden != null && hidden.contains(entityId)) {
+                PacketSender.sendAllSpawnPackets(observer, target);
+            } else if (stripped != null && stripped.contains(entityId)) {
+                PacketSender.sendMetadataPacket(observer, target);
+                PacketSender.sendEquipmentPacket(observer, target);
+                PacketSender.sendPotionEffects(observer, target);
+            }
+        }
+
+        Config config = MAntiESP.getInstance() != null ? MAntiESP.getInstance().getConfiguration() : null;
+        if (config != null && !config.isOnlyPlayer()) {
             if (hidden != null && !hidden.isEmpty()) {
-                for (Entity entity : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
+                for (Entity entity : observer.getWorld().getEntities()) {
+                    if (entity instanceof Player) {
+                        continue;
+                    }
                     if (hidden.contains(entity.getEntityId())) {
                         PacketSender.sendAllSpawnPackets(observer, entity);
                     }
@@ -264,7 +266,10 @@ public class VisibilityManager {
             }
 
             if (stripped != null && !stripped.isEmpty()) {
-                for (Entity entity : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
+                for (Entity entity : observer.getWorld().getEntities()) {
+                    if (entity instanceof Player) {
+                        continue;
+                    }
                     if (stripped.contains(entity.getEntityId())) {
                         PacketSender.sendMetadataPacket(observer, entity);
                         PacketSender.sendEquipmentPacket(observer, entity);
@@ -276,9 +281,8 @@ public class VisibilityManager {
     }
 
     public void restoreAll() {
-        for (UUID uuid : VisibilityListener.CACHED_PLAYERS) {
-            Player observer = Bukkit.getPlayer(uuid);
-            if (observer != null) {
+        for (Player observer : Bukkit.getOnlinePlayers()) {
+            if (observer != null && observer.isOnline()) {
                 restoreFor(observer);
             }
         }

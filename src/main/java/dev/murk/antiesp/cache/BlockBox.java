@@ -35,10 +35,10 @@ public record BlockBox(float minX, float minY, float minZ, float maxX, float max
             }
             tMin = Math.max(tMin, t1);
             tMax = Math.min(tMax, t2);
-            if (tMin > tMax) {
+            if (tMin >= tMax - 1e-6) {
                 return false;
             }
-        } else if (x0 < bx0 || x0 > bx1) {
+        } else if (x0 <= bx0 || x0 >= bx1) {
             return false;
         }
 
@@ -53,10 +53,10 @@ public record BlockBox(float minX, float minY, float minZ, float maxX, float max
             }
             tMin = Math.max(tMin, t1);
             tMax = Math.min(tMax, t2);
-            if (tMin > tMax) {
+            if (tMin >= tMax - 1e-6) {
                 return false;
             }
-        } else if (y0 < by0 || y0 > by1) {
+        } else if (y0 <= by0 || y0 >= by1) {
             return false;
         }
 
@@ -71,14 +71,14 @@ public record BlockBox(float minX, float minY, float minZ, float maxX, float max
             }
             tMin = Math.max(tMin, t1);
             tMax = Math.min(tMax, t2);
-            if (tMin > tMax) {
+            if (tMin >= tMax - 1e-6) {
                 return false;
             }
-        } else if (z0 < bz0 || z0 > bz1) {
+        } else if (z0 <= bz0 || z0 >= bz1) {
             return false;
         }
 
-        return tMin <= tMax;
+        return tMin < tMax - 1e-6;
     }
 
     public double clip(double x0, double y0, double z0,
@@ -109,10 +109,10 @@ public record BlockBox(float minX, float minY, float minZ, float maxX, float max
             }
             tMin = Math.max(tMin, t1);
             tMax = Math.min(tMax, t2);
-            if (tMin > tMax) {
+            if (tMin >= tMax - 1e-6) {
                 return -1.0;
             }
-        } else if (x0 < bx0 || x0 > bx1) {
+        } else if (x0 <= bx0 || x0 >= bx1) {
             return -1.0;
         }
 
@@ -127,10 +127,10 @@ public record BlockBox(float minX, float minY, float minZ, float maxX, float max
             }
             tMin = Math.max(tMin, t1);
             tMax = Math.min(tMax, t2);
-            if (tMin > tMax) {
+            if (tMin >= tMax - 1e-6) {
                 return -1.0;
             }
-        } else if (y0 < by0 || y0 > by1) {
+        } else if (y0 <= by0 || y0 >= by1) {
             return -1.0;
         }
 
@@ -145,13 +145,13 @@ public record BlockBox(float minX, float minY, float minZ, float maxX, float max
             }
             tMin = Math.max(tMin, t1);
             tMax = Math.min(tMax, t2);
-            if (tMin > tMax) {
+            if (tMin >= tMax - 1e-6) {
                 return -1.0;
             }
-        } else if (z0 < bz0 || z0 > bz1) {
+        } else if (z0 <= bz0 || z0 >= bz1) {
             return -1.0;
         }
 
-        return (tMin <= tMax && tMin <= 1.0) ? tMin : -1.0;
+        return (tMin < tMax - 1e-6 && tMin <= 1.0) ? tMin : -1.0;
     }
 }

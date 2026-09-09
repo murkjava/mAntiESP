@@ -9,14 +9,15 @@
 
 A blazing-fast, packet-level Anti-ESP solution for modern Minecraft servers. Built on top of **PacketEvents** and custom 3D voxel DDA raytracing with bit-compressed chunk occlusion caching, **mAntiESP** prevents cheat clients (Entity ESP, Tracers, Box ESP) from rendering concealed players and entities behind walls without inducing server lag or client-side visual artifacts.
 
----
+## ✨ Features
 
-## **⚡ Fast 3D DDA Raytracing**: Powered by a zero-heap voxel traversal algorithm (Amanatides & Woo), minimizing JVM garbage collection overhead during intensive raycasting checks.
+- **⚡ Zero-Allocation 3D DDA Raytracing**: Powered by a zero-heap voxel traversal algorithm (Amanatides & Woo) with `ThreadLocal` accessor recycling, minimizing JVM garbage collection overhead during intensive raycasting checks.
+- **🌐 2D Spatial Hash Grid Partitioning**: In `only-player` mode, player visibility queries are resolved through a spatial grid partition (64×64 block cells), eliminating expensive Bukkit chunk entity lookups (`getNearbyEntities()`) and reducing proximity checks from $O(N \cdot M)$ to localized cells.
 - **🎥 Third-Person Camera (F5) Support**: Accurately simulates vanilla Minecraft camera raytracing for both behind and front (selfie) views. Traces camera rays against occluding blocks and clips camera distance to prevent cheating while ensuring targets in legitimate third-person view remain visible.
-- **💾 Bit-Compressed Chunk Occlusion Cache**: Stores block transparency states in compact bitsets (~1 bit per block), avoiding expensive Bukkit/NMS chunk and block state lookups. Cache updates dynamically on block changes and chunk loading.
+- **💾 Bit-Compressed Chunk Occlusion Cache & `IntBoxMap`**: Stores block transparency states in compact bitsets (~1 bit per block), and custom block shapes (slabs, corner stairs, snow) in primitive-indexed binary-searched maps (`IntBoxMap`), avoiding heavy Bukkit/NMS chunk and block state lookups.
 - **🔍 Case-Insensitive Pattern & Keyword Block Matching**: Easily declare transparent materials by group keywords (`DOOR`, `FENCE`, `BUTTON`, `LEAVES`, `GLASS`, `SIGN`) or wildcards (`*GLASS*`, `OAK_*`) without listing dozens of individual material variations.
-- **🎯 Dynamic Multi-Point Silhouette Sampling**:
-  - Casts rays toward multiple anatomical points (feet, mid-torso, head).
+- **🎯 Multi-Point Anatomical Silhouette Sampling**:
+  - Casts rays toward multiple vertical anatomical levels (head, chest, mid-torso, low-body, feet).
   - Computes dynamic horizontal tangent offsets perpendicular to the observer's viewing angle to spot players peeking around corners.
   - Supports configurable 3-axis hitbox expansion (`X`, `Y`, `Z`).
 - **🏃 Movement Prediction & Extrapolation**: Tracks player velocity and inter-tick displacement, extrapolating future positions to eliminate peek delay and visual pop-in when players sprint around corners.
@@ -286,7 +287,7 @@ cd mAntiESP
 mvn clean package
 ```
 
-The compiled and shaded jar will be generated inside `target/mAntiESP-1.0.jar`.
+The compiled and shaded jar will be generated inside `target/mAntiESP-1.0.2.jar`.
 
 ---
 

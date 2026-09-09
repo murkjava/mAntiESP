@@ -2,6 +2,7 @@ package dev.murk.antiesp.visibility;
 
 import dev.murk.antiesp.cache.ChunkCacheManager;
 import dev.murk.antiesp.config.Config;
+import dev.murk.antiesp.listener.VisibilityListener;
 import dev.murk.antiesp.raytrace.FastRaytracer;
 import org.bukkit.*;
 import org.bukkit.entity.Entity;
@@ -468,11 +469,12 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
     }
 
     public void updateLocations() {
-        updateLocations(Bukkit.getOnlinePlayers());
+        updateLocations(VisibilityListener.CACHED_PLAYERS.values());
     }
 
     public void updateLocations(Collection<? extends Player> players) {
         if (players == null) return;
+
         for (Player player : players) {
             if (player == null) continue;
 
@@ -489,6 +491,7 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
                     continue;
                 }
             }
+
             Vector fallback = player.getVelocity();
             velocities.put(player.getUniqueId(), fallback);
         }

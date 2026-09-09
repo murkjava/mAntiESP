@@ -23,7 +23,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class VisibilityListener implements Listener {
-    public static final Set<UUID> CACHED_PLAYERS = ConcurrentHashMap.newKeySet();
+    public static final Map<UUID, Player> CACHED_PLAYERS = new ConcurrentHashMap<>();
     public static final Map<Integer, UUID> ENTITY_TO_PLAYER = new ConcurrentHashMap<>();
 
     private final MAntiESP plugin;
@@ -61,12 +61,12 @@ public class VisibilityListener implements Listener {
         cancelTask();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            CACHED_PLAYERS.add(player.getUniqueId());
+            CACHED_PLAYERS.put(player.getUniqueId(), player);
             ENTITY_TO_PLAYER.put(player.getEntityId(), player.getUniqueId());
         }
 
         task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            Collection<? extends Player> online = Bukkit.getOnlinePlayers();
+            Collection<? extends Player> online = CACHED_PLAYERS.values();
             if (online.isEmpty()) {
                 return;
             }
@@ -171,7 +171,7 @@ public class VisibilityListener implements Listener {
     @EventHandler
     public void on(PlayerJoinEvent e) {
         Player player = e.getPlayer();
-        CACHED_PLAYERS.add(player.getUniqueId());
+        CACHED_PLAYERS.put(player.getUniqueId(), player);
         ENTITY_TO_PLAYER.put(player.getEntityId(), player.getUniqueId());
     }
 

@@ -6,7 +6,6 @@ import dev.murk.antiesp.MAntiESP;
 import dev.murk.antiesp.config.Config;
 import dev.murk.antiesp.listener.VisibilityListener;
 import dev.murk.antiesp.packet.PacketSender;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
@@ -234,7 +233,7 @@ public class VisibilityManager {
             return;
         }
 
-        for (Player target : Bukkit.getOnlinePlayers()) {
+        for (Player target : VisibilityListener.CACHED_PLAYERS.values()) {
             if (observer.equals(target)) {
                 continue;
             }
@@ -281,7 +280,7 @@ public class VisibilityManager {
     }
 
     public void restoreAll() {
-        for (Player observer : Bukkit.getOnlinePlayers()) {
+        for (Player observer : VisibilityListener.CACHED_PLAYERS.values()) {
             if (observer != null && observer.isOnline()) {
                 restoreFor(observer);
             }

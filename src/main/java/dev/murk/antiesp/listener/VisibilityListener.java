@@ -3,6 +3,7 @@ package dev.murk.antiesp.listener;
 import dev.murk.antiesp.MAntiESP;
 import dev.murk.antiesp.config.Config;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -95,6 +96,17 @@ public class VisibilityListener implements Listener {
 
                 for (int i = 0; i < snapshots.size(); i++) {
                     PlayerSnapshot observer = snapshots.get(i);
+                    boolean hasBypass = observer.player.hasPermission("mantiesp.bypass")
+                            || (config.getHide().isIgnoreSpectator() && observer.player.getGameMode() == GameMode.SPECTATOR);
+
+                    if (hasBypass) {
+                        if (plugin.getVisibilityManager().hasHiddenEntities(observer.player)
+                                || plugin.getVisibilityManager().hasStrippedEntities(observer.player)) {
+                            plugin.getVisibilityManager().restoreFor(observer.player);
+                        }
+                        continue;
+                    }
+
                     Map<Long, List<PlayerSnapshot>> worldGrid = grid.get(observer.worldId);
                     if (worldGrid == null) continue;
 
@@ -126,6 +138,17 @@ public class VisibilityListener implements Listener {
             } else {
                 for (int i = 0; i < snapshots.size(); i++) {
                     PlayerSnapshot observer = snapshots.get(i);
+                    boolean hasBypass = observer.player.hasPermission("mantiesp.bypass")
+                            || (config.getHide().isIgnoreSpectator() && observer.player.getGameMode() == GameMode.SPECTATOR);
+
+                    if (hasBypass) {
+                        if (plugin.getVisibilityManager().hasHiddenEntities(observer.player)
+                                || plugin.getVisibilityManager().hasStrippedEntities(observer.player)) {
+                            plugin.getVisibilityManager().restoreFor(observer.player);
+                        }
+                        continue;
+                    }
+
                     for (Entity target : observer.player.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
                         if (!config.shouldCheckEntity(target)) continue;
 
@@ -154,6 +177,13 @@ public class VisibilityListener implements Listener {
         Player player = e.getPlayer();
         CACHED_PLAYERS.add(player.getUniqueId());
         ENTITY_TO_PLAYER.put(player.getEntityId(), player.getUniqueId());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void on(PlayerGameModeChangeEvent e) {
+        if (e.getNewGameMode() == GameMode.SPECTATOR) {
+            plugin.getVisibilityManager().restoreFor(e.getPlayer());
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

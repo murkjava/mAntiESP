@@ -11,7 +11,9 @@ import dev.murk.antiesp.config.Config;
 import dev.murk.antiesp.listener.VisibilityListener;
 import dev.murk.antiesp.visibility.VisibilityManager;
 import dev.murk.antiesp.visibility.VisibilityService;
+import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
@@ -86,9 +88,9 @@ public class PacketCancelListener extends PacketListenerAbstract {
         if (entityId != -1) {
             if (visibilityManager.isHidden(observer, entityId)) {
                 if (event.getPacketType() == PacketType.Play.Server.ENTITY_METADATA || event.getPacketType() == PacketType.Play.Server.ENTITY_EFFECT) {
-                    Player target = findOnlinePlayer(null, entityId);
+                    Entity target = SpigotConversionUtil.getEntityById(observer.getWorld(), entityId);
                     if (target != null && visibilityService.canSee(observer, target)) {
-                        Player finalTarget = target;
+                        Entity finalTarget = target;
                         Bukkit.getScheduler().runTask(plugin, () -> plugin.getVisibilityListener().updateVisibility(observer, finalTarget));
                     }
                 }
@@ -125,14 +127,36 @@ public class PacketCancelListener extends PacketListenerAbstract {
                 return true;
             }
 
+            Entity targetEntity = SpigotConversionUtil.getEntityById(observer.getWorld(), entityId);
+            if (targetEntity != null) {
+                if (!config.shouldCheckEntity(targetEntity)) {
+                    return true;
+                }
+
+                boolean hasNametag = !config.getHide().isIgnoreNametag() && visibilityService.canSeeNametag(observer, targetEntity);
+                boolean canSee = visibilityService.canSee(observer, targetEntity);
+                if (!canSee) {
+                    if (hasNametag) {
+                        visibilityManager.addStripped(observer, entityId);
+                    } else {
+                        event.setCancelled(true);
+                        visibilityManager.addHidden(observer, entityId);
+                    }
+                }
+                return true;
+            }
+
             var entityType = packet.getEntityType();
             UUID uuid = packet.getUUID().orElse(null);
             Player targetPlayer = findOnlinePlayer(uuid, entityId);
 
             boolean isPlayer = entityType == EntityTypes.PLAYER || targetPlayer != null;
-            double height = isPlayer ? 1.8 : 1.5;
-
             if (!isPlayer && config.isOnlyPlayer()) {
+                return true;
+            }
+
+            org.bukkit.entity.EntityType bukkitType = SpigotConversionUtil.toBukkitEntityType(entityType);
+            if (!config.shouldCheckEntity(bukkitType)) {
                 return true;
             }
 
@@ -146,6 +170,7 @@ public class PacketCancelListener extends PacketListenerAbstract {
                 canSee = visibilityService.canSee(observer, targetPlayer);
             } else {
                 var pos = packet.getPosition();
+                double height = isPlayer ? 1.8 : 1.5;
                 canSee = visibilityService.canSee(observer, pos.getX(), pos.getY(), pos.getZ(), height);
             }
 
@@ -169,28 +194,27 @@ public class PacketCancelListener extends PacketListenerAbstract {
             }
 
             Player targetPlayer = findOnlinePlayer(packet.getUUID(), entityId);
-
-            boolean hasNametag = false;
-            if (!config.getHide().isIgnoreNametag() && targetPlayer != null) {
-                hasNametag = visibilityService.canSeeNametag(observer, targetPlayer);
-            }
-
-            boolean canSee;
             if (targetPlayer != null) {
-                canSee = visibilityService.canSee(observer, targetPlayer);
-            } else {
-                var pos = packet.getPosition();
-                canSee = visibilityService.canSee(observer, pos.getX(), pos.getY(), pos.getZ(), 1.8);
+                boolean hasNametag = !config.getHide().isIgnoreNametag() && visibilityService.canSeeNametag(observer, targetPlayer);
+                boolean canSee = visibilityService.canSee(observer, targetPlayer);
+                if (!canSee) {
+                    if (hasNametag) {
+                        visibilityManager.addStripped(observer, entityId);
+                    } else {
+                        event.setCancelled(true);
+                        visibilityManager.addHidden(observer, entityId);
+                    }
+                }
+                return true;
             }
 
+            var pos = packet.getPosition();
+            boolean canSee = visibilityService.canSee(observer, pos.getX(), pos.getY(), pos.getZ(), 1.8);
             if (!canSee) {
-                if (hasNametag) {
-                    visibilityManager.addStripped(observer, entityId);
-                } else {
-                    event.setCancelled(true);
-                    visibilityManager.addHidden(observer, entityId);
-                }
+                event.setCancelled(true);
+                visibilityManager.addHidden(observer, entityId);
             }
+
             return true;
         }
 
@@ -206,28 +230,36 @@ public class PacketCancelListener extends PacketListenerAbstract {
                 return true;
             }
 
-            Player targetPlayer = findOnlinePlayer(null, entityId);
-
-            boolean hasNametag = false;
-            if (!config.getHide().isIgnoreNametag() && targetPlayer != null) {
-                hasNametag = visibilityService.canSeeNametag(observer, targetPlayer);
-            }
-
-            boolean canSee;
-            if (targetPlayer != null) {
-                canSee = visibilityService.canSee(observer, targetPlayer);
-            } else {
-                var pos = packet.getPosition();
-                canSee = visibilityService.canSee(observer, pos.getX(), pos.getY(), pos.getZ(), 1.5);
-            }
-
-            if (!canSee) {
-                if (hasNametag) {
-                    visibilityManager.addStripped(observer, entityId);
-                } else {
-                    event.setCancelled(true);
-                    visibilityManager.addHidden(observer, entityId);
+            Entity targetEntity = SpigotConversionUtil.getEntityById(observer.getWorld(), entityId);
+            if (targetEntity != null) {
+                if (!config.shouldCheckEntity(targetEntity)) {
+                    return true;
                 }
+
+                boolean hasNametag = !config.getHide().isIgnoreNametag() && visibilityService.canSeeNametag(observer, targetEntity);
+                boolean canSee = visibilityService.canSee(observer, targetEntity);
+                if (!canSee) {
+                    if (hasNametag) {
+                        visibilityManager.addStripped(observer, entityId);
+                    } else {
+                        event.setCancelled(true);
+                        visibilityManager.addHidden(observer, entityId);
+                    }
+                }
+                return true;
+            }
+
+            var entityType = packet.getEntityType();
+            org.bukkit.entity.EntityType bukkitType = SpigotConversionUtil.toBukkitEntityType(entityType);
+            if (!config.shouldCheckEntity(bukkitType)) {
+                return true;
+            }
+
+            var pos = packet.getPosition();
+            boolean canSee = visibilityService.canSee(observer, pos.getX(), pos.getY(), pos.getZ(), 1.5);
+            if (!canSee) {
+                event.setCancelled(true);
+                visibilityManager.addHidden(observer, entityId);
             }
             return true;
         }

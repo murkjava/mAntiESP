@@ -222,59 +222,64 @@ public class VisibilityManager {
         strippedEntities.clear();
     }
 
-    public void restoreAll() {
+    public void restoreFor(Player observer) {
+        if (observer == null) return;
+
+        Set<Integer> hidden = hiddenEntities.remove(observer.getUniqueId());
+        Set<Integer> stripped = strippedEntities.remove(observer.getUniqueId());
+
+        if ((hidden == null || hidden.isEmpty()) && (stripped == null || stripped.isEmpty())) {
+            return;
+        }
+
         Config config = MAntiESP.getInstance().getConfiguration();
+        double maxDistance = config.getMaxDistance() + (config.getF5().isEnabled() ? config.getF5().getDistance() : 0.0);
+        double maxDistSq = maxDistance * maxDistance;
 
-        for (UUID uuid : VisibilityListener.CACHED_PLAYERS) {
-            Player observer = Bukkit.getPlayer(uuid);
-            if (observer == null) continue;
+        if (config.isOnlyPlayer()) {
+            for (UUID targetUuid : VisibilityListener.CACHED_PLAYERS) {
+                if (observer.getUniqueId().equals(targetUuid)) continue;
 
-            Set<Integer> hidden = hiddenEntities.remove(observer.getUniqueId());
-            Set<Integer> stripped = strippedEntities.remove(observer.getUniqueId());
+                Player target = Bukkit.getPlayer(targetUuid);
+                if (target == null || !observer.getWorld().equals(target.getWorld())) continue;
 
-            if ((hidden == null || hidden.isEmpty()) && (stripped == null || stripped.isEmpty())) {
-                continue;
+                if (observer.getLocation().distanceSquared(target.getLocation()) <= maxDistSq) {
+                    int entityId = target.getEntityId();
+                    if (hidden != null && hidden.contains(entityId)) {
+                        PacketSender.sendAllSpawnPackets(observer, target);
+                    } else if (stripped != null && stripped.contains(entityId)) {
+                        PacketSender.sendMetadataPacket(observer, target);
+                        PacketSender.sendEquipmentPacket(observer, target);
+                        PacketSender.sendPotionEffects(observer, target);
+                    }
+                }
+            }
+        } else {
+            if (hidden != null && !hidden.isEmpty()) {
+                for (Entity entity : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
+                    if (hidden.contains(entity.getEntityId())) {
+                        PacketSender.sendAllSpawnPackets(observer, entity);
+                    }
+                }
             }
 
-            double maxDistance = config.getMaxDistance() + (config.getF5().isEnabled() ? config.getF5().getDistance() : 0.0);
-            double maxDistSq = maxDistance * maxDistance;
-
-            if (config.isOnlyPlayer()) {
-                for (UUID targetUuid : VisibilityListener.CACHED_PLAYERS) {
-                    if (uuid.equals(targetUuid)) continue;
-
-                    Player target = Bukkit.getPlayer(targetUuid);
-                    if (target == null || !observer.getWorld().equals(target.getWorld())) continue;
-
-                    if (observer.getLocation().distanceSquared(target.getLocation()) <= maxDistSq) {
-                        int entityId = target.getEntityId();
-                        if (hidden != null && hidden.contains(entityId)) {
-                            PacketSender.sendAllSpawnPackets(observer, target);
-                        } else if (stripped != null && stripped.contains(entityId)) {
-                            PacketSender.sendMetadataPacket(observer, target);
-                            PacketSender.sendEquipmentPacket(observer, target);
-                            PacketSender.sendPotionEffects(observer, target);
-                        }
+            if (stripped != null && !stripped.isEmpty()) {
+                for (Entity entity : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
+                    if (stripped.contains(entity.getEntityId())) {
+                        PacketSender.sendMetadataPacket(observer, entity);
+                        PacketSender.sendEquipmentPacket(observer, entity);
+                        PacketSender.sendPotionEffects(observer, entity);
                     }
                 }
-            } else {
-                if (hidden != null && !hidden.isEmpty()) {
-                    for (Entity entity : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
-                        if (hidden.contains(entity.getEntityId())) {
-                            PacketSender.sendAllSpawnPackets(observer, entity);
-                        }
-                    }
-                }
+            }
+        }
+    }
 
-                if (stripped != null && !stripped.isEmpty()) {
-                    for (Entity entity : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
-                        if (stripped.contains(entity.getEntityId())) {
-                            PacketSender.sendMetadataPacket(observer, entity);
-                            PacketSender.sendEquipmentPacket(observer, entity);
-                            PacketSender.sendPotionEffects(observer, entity);
-                        }
-                    }
-                }
+    public void restoreAll() {
+        for (UUID uuid : VisibilityListener.CACHED_PLAYERS) {
+            Player observer = Bukkit.getPlayer(uuid);
+            if (observer != null) {
+                restoreFor(observer);
             }
         }
         hiddenEntities.clear();

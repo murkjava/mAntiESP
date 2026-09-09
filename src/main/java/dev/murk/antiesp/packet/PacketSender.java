@@ -12,6 +12,7 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEn
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityTeleport;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnEntity;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnLivingEntity;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnPlayer;
 import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import org.bukkit.Location;
@@ -57,6 +58,21 @@ public final class PacketSender {
                     SpigotConversionUtil.fromBukkitLocation(loc).getPosition(),
                     loc.getYaw(),
                     loc.getPitch(),
+                    Collections.emptyList()
+            );
+            PacketEvents.getAPI().getPlayerManager().sendPacket(observer, packet);
+            return;
+        }
+
+        if (entity instanceof LivingEntity living) {
+            Location loc = living.getLocation();
+            WrapperPlayServerSpawnLivingEntity packet = new WrapperPlayServerSpawnLivingEntity(
+                    living.getEntityId(),
+                    living.getUniqueId(),
+                    SpigotConversionUtil.fromBukkitEntityType(living.getType()),
+                    SpigotConversionUtil.fromBukkitLocation(loc),
+                    loc.getYaw(),
+                    Vector3d.zero(),
                     Collections.emptyList()
             );
             PacketEvents.getAPI().getPlayerManager().sendPacket(observer, packet);

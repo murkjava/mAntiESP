@@ -8,7 +8,6 @@ import dev.murk.antiesp.config.Config;
 import dev.murk.antiesp.listener.BlockEventListener;
 import dev.murk.antiesp.listener.ChunkEventListener;
 import dev.murk.antiesp.listener.VisibilityListener;
-import dev.murk.antiesp.packet.PacketBlockListener;
 import dev.murk.antiesp.packet.PacketCancelListener;
 import dev.murk.antiesp.visibility.VisibilityManager;
 import dev.murk.antiesp.visibility.VisibilityService;
@@ -31,7 +30,6 @@ public final class MAntiESP extends JavaPlugin {
     private VisibilityService visibilityService;
     private VisibilityListener visibilityListener;
 
-    private PacketBlockListener packetBlockListener;
     private PacketCancelListener packetCancel;
 
     @Override
@@ -54,9 +52,6 @@ public final class MAntiESP extends JavaPlugin {
 
         visibilityListener = new VisibilityListener(this, configuration);
         pm.registerEvents(visibilityListener, this);
-
-        packetBlockListener = new PacketBlockListener(chunkCacheManager, configuration);
-        PacketEvents.getAPI().getEventManager().registerListener(packetBlockListener);
 
         packetCancel = new PacketCancelListener(this);
         PacketEvents.getAPI().getEventManager().registerListener(packetCancel);
@@ -91,11 +86,6 @@ public final class MAntiESP extends JavaPlugin {
         if (packetCancel != null) {
             PacketEvents.getAPI().getEventManager().unregisterListener(packetCancel);
             packetCancel = null;
-        }
-
-        if (packetBlockListener != null) {
-            PacketEvents.getAPI().getEventManager().unregisterListener(packetBlockListener);
-            packetBlockListener = null;
         }
 
         if (visibilityManager != null) {

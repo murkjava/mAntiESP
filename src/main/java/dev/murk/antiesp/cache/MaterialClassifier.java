@@ -11,10 +11,12 @@ import org.bukkit.block.data.type.Snow;
 import org.bukkit.block.data.type.Stairs;
 import org.bukkit.block.data.type.TrapDoor;
 
+import java.util.Arrays;
 import java.util.Set;
 
 public final class MaterialClassifier {
     private static final boolean[] OCCLUDING = new boolean[Material.values().length];
+    private static final boolean[] TRANSPARENT = new boolean[Material.values().length];
 
     static {
         initDefault();
@@ -24,6 +26,9 @@ public final class MaterialClassifier {
     }
 
     private static void initDefault() {
+        Arrays.fill(OCCLUDING, false);
+        Arrays.fill(TRANSPARENT, false);
+
         for (Material material : Material.values()) {
             if (!material.isBlock()) {
                 continue;
@@ -37,7 +42,7 @@ public final class MaterialClassifier {
                     || name.contains("HOPPER") || name.contains("CAULDRON") || name.contains("LANTERN") || name.contains("CHAIN") || name.contains("BARS")
                     || name.contains("END_ROD") || name.contains("DAYLIGHT") || name.contains("LECTERN") || name.contains("BELL") || name.contains("CAMPFIRE")
                     || name.contains("GRINDSTONE") || name.contains("STONECUTTER") || name.contains("ENCHANTING") || name.contains("BREWING") || name.contains("POT")
-                    || name.contains("SCAFFOLDING") || name.contains("POINTED_DRIPSTONE") || name.contains("AMETHYST") || name.contains("SKULL")
+                    || name.contains("SCAFFOLDING") || name.contains("POINTED_DRIPSTONE") || (name.contains("AMETHYST") && !name.contains("BLOCK")) || name.contains("SKULL")
                     || name.contains("HEAD") || name.contains("BANNER") || name.contains("SIGN") || name.contains("ROD") || name.contains("CANDLE")) {
                 continue;
             }
@@ -59,8 +64,16 @@ public final class MaterialClassifier {
             int ordinal = material.ordinal();
             if (ordinal < OCCLUDING.length) {
                 OCCLUDING[ordinal] = false;
+                TRANSPARENT[ordinal] = true;
             }
         }
+    }
+
+    public static boolean isTransparent(Material material) {
+        if (material == null || material.isAir()) return true;
+        int ordinal = material.ordinal();
+        if (ordinal >= TRANSPARENT.length) return false;
+        return TRANSPARENT[ordinal];
     }
 
     public static boolean isOccluding(Material material) {
@@ -75,7 +88,9 @@ public final class MaterialClassifier {
     public static boolean isFullOccluding(BlockData data) {
         if (data == null) return false;
 
-        if (data instanceof Slab slab) return slab.getType() == Slab.Type.DOUBLE && isOccluding(slab.getMaterial());
+        if (data instanceof Slab slab) {
+            return slab.getType() == Slab.Type.DOUBLE && !isTransparent(slab.getMaterial());
+        }
 
         return isOccluding(data.getMaterial());
     }
@@ -96,30 +111,7 @@ public final class MaterialClassifier {
         }
 
         if (data instanceof Stairs stairs) {
-            Bisected.Half half = stairs.getHalf();
-            BlockFace facing = stairs.getFacing();
-            BlockBox base = (half == Bisected.Half.BOTTOM) ? BlockBox.SLAB_BOTTOM : BlockBox.SLAB_TOP;
-            BlockBox step;
-
-            if (half == Bisected.Half.BOTTOM) {
-                step = switch (facing) {
-                    case NORTH -> new BlockBox(0, 0.5f, 0, 1, 1, 0.5f);
-                    case SOUTH -> new BlockBox(0, 0.5f, 0.5f, 1, 1, 1);
-                    case WEST -> new BlockBox(0, 0.5f, 0, 0.5f, 1, 1);
-                    case EAST -> new BlockBox(0.5f, 0.5f, 0, 1, 1, 1);
-                    default -> new BlockBox(0, 0.5f, 0, 1, 1, 0.5f);
-                };
-            } else {
-                step = switch (facing) {
-                    case NORTH -> new BlockBox(0, 0, 0, 1, 0.5f, 0.5f);
-                    case SOUTH -> new BlockBox(0, 0, 0.5f, 1, 0.5f, 1);
-                    case WEST -> new BlockBox(0, 0, 0, 0.5f, 0.5f, 1);
-                    case EAST -> new BlockBox(0.5f, 0, 0, 1, 0.5f, 1);
-                    default -> new BlockBox(0, 0, 0, 1, 0.5f, 0.5f);
-                };
-            }
-
-            return new BlockBox[]{base, step};
+            return getStairBoxes(stairs);
         }
 
         if (data instanceof Snow snow) {
@@ -154,5 +146,48 @@ public final class MaterialClassifier {
         }
 
         return null;
+    }
+
+    private static BlockBox[] getStairBoxes(Stairs stairs) {
+        Bisected.Half half = stairs.getHalf();
+        BlockFace facing = stairs.getFacing();
+        Stairs.Shape shape = stairs.getShape();
+        if (shape == null) shape = Stairs.Shape.STRAIGHT;
+
+        float y0 = (half == Bisected.Half.BOTTOM) ? 0.5f : 0.0f;
+        float y1 = (half == Bisected.Half.BOTTOM) ? 1.0f : 0.5f;
+        BlockBox base = (half == Bisected.Half.BOTTOM) ? BlockBox.SLAB_BOTTOM : BlockBox.SLAB_TOP;
+
+        return switch (facing) {
+            case NORTH -> switch (shape) {
+                case STRAIGHT -> new BlockBox[]{base, new BlockBox(0, y0, 0, 1, y1, 0.5f)};
+                case INNER_LEFT -> new BlockBox[]{base, new BlockBox(0, y0, 0, 1, y1, 0.5f), new BlockBox(0, y0, 0.5f, 0.5f, y1, 1)};
+                case INNER_RIGHT -> new BlockBox[]{base, new BlockBox(0, y0, 0, 1, y1, 0.5f), new BlockBox(0.5f, y0, 0.5f, 1, y1, 1)};
+                case OUTER_LEFT -> new BlockBox[]{base, new BlockBox(0, y0, 0, 0.5f, y1, 0.5f)};
+                case OUTER_RIGHT -> new BlockBox[]{base, new BlockBox(0.5f, y0, 0, 1, y1, 0.5f)};
+            };
+            case SOUTH -> switch (shape) {
+                case STRAIGHT -> new BlockBox[]{base, new BlockBox(0, y0, 0.5f, 1, y1, 1)};
+                case INNER_LEFT -> new BlockBox[]{base, new BlockBox(0, y0, 0.5f, 1, y1, 1), new BlockBox(0.5f, y0, 0, 1, y1, 0.5f)};
+                case INNER_RIGHT -> new BlockBox[]{base, new BlockBox(0, y0, 0.5f, 1, y1, 1), new BlockBox(0, y0, 0, 0.5f, y1, 0.5f)};
+                case OUTER_LEFT -> new BlockBox[]{base, new BlockBox(0.5f, y0, 0.5f, 1, y1, 1)};
+                case OUTER_RIGHT -> new BlockBox[]{base, new BlockBox(0, y0, 0.5f, 0.5f, y1, 1)};
+            };
+            case WEST -> switch (shape) {
+                case STRAIGHT -> new BlockBox[]{base, new BlockBox(0, y0, 0, 0.5f, y1, 1)};
+                case INNER_LEFT -> new BlockBox[]{base, new BlockBox(0, y0, 0, 0.5f, y1, 1), new BlockBox(0.5f, y0, 0.5f, 1, y1, 1)};
+                case INNER_RIGHT -> new BlockBox[]{base, new BlockBox(0, y0, 0, 0.5f, y1, 1), new BlockBox(0.5f, y0, 0, 1, y1, 0.5f)};
+                case OUTER_LEFT -> new BlockBox[]{base, new BlockBox(0, y0, 0, 0.5f, y1, 0.5f)};
+                case OUTER_RIGHT -> new BlockBox[]{base, new BlockBox(0, y0, 0.5f, 0.5f, y1, 1)};
+            };
+            case EAST -> switch (shape) {
+                case STRAIGHT -> new BlockBox[]{base, new BlockBox(0.5f, y0, 0, 1, y1, 1)};
+                case INNER_LEFT -> new BlockBox[]{base, new BlockBox(0.5f, y0, 0, 1, y1, 1), new BlockBox(0, y0, 0, 0.5f, y1, 0.5f)};
+                case INNER_RIGHT -> new BlockBox[]{base, new BlockBox(0.5f, y0, 0, 1, y1, 1), new BlockBox(0, y0, 0.5f, 0.5f, y1, 1)};
+                case OUTER_LEFT -> new BlockBox[]{base, new BlockBox(0.5f, y0, 0, 1, y1, 0.5f)};
+                case OUTER_RIGHT -> new BlockBox[]{base, new BlockBox(0.5f, y0, 0.5f, 1, y1, 1)};
+            };
+            default -> new BlockBox[]{base, new BlockBox(0, y0, 0, 1, y1, 0.5f)};
+        };
     }
 }

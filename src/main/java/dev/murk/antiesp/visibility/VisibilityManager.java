@@ -43,7 +43,10 @@ public class VisibilityManager {
             }
 
             if (!toDestroy.isEmpty()) {
-                int[] entityIds = toDestroy.stream().mapToInt(Integer::intValue).toArray();
+                int[] entityIds = new int[toDestroy.size()];
+                for (int i = 0; i < toDestroy.size(); i++) {
+                    entityIds[i] = toDestroy.get(i);
+                }
                 WrapperPlayServerDestroyEntities packet = new WrapperPlayServerDestroyEntities(entityIds);
                 PacketEvents.getAPI().getPlayerManager().sendPacket(observer, packet);
             }

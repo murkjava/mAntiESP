@@ -2,19 +2,15 @@ package dev.murk.antiesp.visibility;
 
 import dev.murk.antiesp.cache.ChunkCacheManager;
 import dev.murk.antiesp.config.Config;
-import dev.murk.antiesp.listener.VisibilityListener;
 import dev.murk.antiesp.raytrace.FastRaytracer;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -403,8 +399,12 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
     }
 
     public void updateLocations() {
-        for (UUID uuid : VisibilityListener.CACHED_PLAYERS) {
-            Player player = Bukkit.getPlayer(uuid);
+        updateLocations(Bukkit.getOnlinePlayers());
+    }
+
+    public void updateLocations(Collection<? extends Player> players) {
+        if (players == null) return;
+        for (Player player : players) {
             if (player == null) continue;
 
             Location current = player.getLocation();
@@ -444,15 +444,13 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
     }
 
     public boolean isGlowing(Entity target) {
-        if (target == null) {
-            return false;
-        }
-        if (target.isGlowing()) {
-            return true;
-        }
-        if (target instanceof LivingEntity living) {
+        if (target == null) return false;
+
+        if (target.isGlowing()) return true;
+
+        if (target instanceof LivingEntity living)
             return living.hasPotionEffect(PotionEffectType.GLOWING);
-        }
+
         return false;
     }
 

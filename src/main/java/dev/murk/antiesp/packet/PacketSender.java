@@ -27,6 +27,15 @@ import java.util.List;
 
 public final class PacketSender {
 
+    private static final List<Equipment> EMPTY_EQUIPMENT_LIST = List.of(
+            new Equipment(EquipmentSlot.MAIN_HAND, ItemStack.EMPTY),
+            new Equipment(EquipmentSlot.OFF_HAND, ItemStack.EMPTY),
+            new Equipment(EquipmentSlot.BOOTS, ItemStack.EMPTY),
+            new Equipment(EquipmentSlot.LEGGINGS, ItemStack.EMPTY),
+            new Equipment(EquipmentSlot.CHEST_PLATE, ItemStack.EMPTY),
+            new Equipment(EquipmentSlot.HELMET, ItemStack.EMPTY)
+    );
+
     private PacketSender() {
     }
 
@@ -88,15 +97,7 @@ public final class PacketSender {
     }
 
     public static void sendEmptyEquipmentPacket(Player observer, int entityId) {
-        List<Equipment> equipmentList = List.of(
-                new Equipment(EquipmentSlot.MAIN_HAND, ItemStack.EMPTY),
-                new Equipment(EquipmentSlot.OFF_HAND, ItemStack.EMPTY),
-                new Equipment(EquipmentSlot.BOOTS, ItemStack.EMPTY),
-                new Equipment(EquipmentSlot.LEGGINGS, ItemStack.EMPTY),
-                new Equipment(EquipmentSlot.CHEST_PLATE, ItemStack.EMPTY),
-                new Equipment(EquipmentSlot.HELMET, ItemStack.EMPTY)
-        );
-        WrapperPlayServerEntityEquipment packet = new WrapperPlayServerEntityEquipment(entityId, equipmentList);
+        WrapperPlayServerEntityEquipment packet = new WrapperPlayServerEntityEquipment(entityId, EMPTY_EQUIPMENT_LIST);
         PacketEvents.getAPI().getPlayerManager().sendPacket(observer, packet);
     }
 

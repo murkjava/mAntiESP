@@ -3,6 +3,7 @@ package dev.murk.antiesp.listener;
 import dev.murk.antiesp.MAntiESP;
 import dev.murk.antiesp.config.Config;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -17,9 +18,7 @@ import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class VisibilityListener implements Listener {
@@ -29,6 +28,27 @@ public class VisibilityListener implements Listener {
     private final MAntiESP plugin;
     private final Config config;
     private BukkitTask task;
+
+    private static final class PlayerSnapshot {
+        final Player player;
+        final UUID worldId;
+        final double x;
+        final double y;
+        final double z;
+        final int cellX;
+        final int cellZ;
+
+        PlayerSnapshot(Player player) {
+            this.player = player;
+            this.worldId = player.getWorld().getUID();
+            Location loc = player.getLocation();
+            this.x = loc.getX();
+            this.y = loc.getY();
+            this.z = loc.getZ();
+            this.cellX = ((int) Math.floor(x)) >> 6;
+            this.cellZ = ((int) Math.floor(z)) >> 6;
+        }
+    }
 
     public VisibilityListener(MAntiESP plugin, Config config) {
         this.plugin = plugin;
@@ -45,35 +65,71 @@ public class VisibilityListener implements Listener {
         }
 
         task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            plugin.getVisibilityService().updateLocations();
+            Collection<? extends Player> online = Bukkit.getOnlinePlayers();
+            if (online.isEmpty()) {
+                return;
+            }
+
+            plugin.getVisibilityService().updateLocations(online);
             double maxDistance = config.getMaxDistance() + (config.getF5().isEnabled() ? config.getF5().getDistance() : 0.0);
             double maxDistSq = maxDistance * maxDistance;
 
+            List<PlayerSnapshot> snapshots = new ArrayList<>(online.size());
+            for (Player player : online) {
+                if (player != null && player.isOnline()) {
+                    snapshots.add(new PlayerSnapshot(player));
+                }
+            }
+
             if (config.isOnlyPlayer()) {
-                for (UUID uuid : CACHED_PLAYERS) {
-                    Player observer = Bukkit.getPlayer(uuid);
-                    if (observer == null) continue;
+                Map<UUID, Map<Long, List<PlayerSnapshot>>> grid = new HashMap<>();
+                for (int i = 0; i < snapshots.size(); i++) {
+                    PlayerSnapshot s = snapshots.get(i);
+                    long cellKey = (((long) s.cellX) << 32) | (s.cellZ & 0xFFFFFFFFL);
+                    grid.computeIfAbsent(s.worldId, k -> new HashMap<>())
+                            .computeIfAbsent(cellKey, k -> new ArrayList<>(4))
+                            .add(s);
+                }
 
-                    for (UUID targetUuid : CACHED_PLAYERS) {
-                        if (uuid.equals(targetUuid)) continue;
+                int cellRadius = (int) Math.ceil(maxDistance / 64.0);
 
-                        Player target = Bukkit.getPlayer(targetUuid);
-                        if (target == null || !observer.getWorld().equals(target.getWorld())) continue;
+                for (int i = 0; i < snapshots.size(); i++) {
+                    PlayerSnapshot observer = snapshots.get(i);
+                    Map<Long, List<PlayerSnapshot>> worldGrid = grid.get(observer.worldId);
+                    if (worldGrid == null) continue;
 
-                        if (observer.getLocation().distanceSquared(target.getLocation()) <= maxDistSq) {
-                            updateVisibility(observer, target);
+                    int minCx = observer.cellX - cellRadius;
+                    int maxCx = observer.cellX + cellRadius;
+                    int minCz = observer.cellZ - cellRadius;
+                    int maxCz = observer.cellZ + cellRadius;
+
+                    for (int cx = minCx; cx <= maxCx; cx++) {
+                        for (int cz = minCz; cz <= maxCz; cz++) {
+                            long key = (((long) cx) << 32) | (cz & 0xFFFFFFFFL);
+                            List<PlayerSnapshot> targets = worldGrid.get(key);
+                            if (targets == null) continue;
+
+                            for (int t = 0; t < targets.size(); t++) {
+                                PlayerSnapshot target = targets.get(t);
+                                if (target.player == observer.player) continue;
+
+                                double dx = target.x - observer.x;
+                                double dy = target.y - observer.y;
+                                double dz = target.z - observer.z;
+                                if (dx * dx + dy * dy + dz * dz <= maxDistSq) {
+                                    updateVisibility(observer.player, target.player);
+                                }
+                            }
                         }
                     }
                 }
             } else {
-                for (UUID uuid : CACHED_PLAYERS) {
-                    Player observer = Bukkit.getPlayer(uuid);
-                    if (observer == null) continue;
-
-                    for (Entity target : observer.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
+                for (int i = 0; i < snapshots.size(); i++) {
+                    PlayerSnapshot observer = snapshots.get(i);
+                    for (Entity target : observer.player.getNearbyEntities(maxDistance, maxDistance, maxDistance)) {
                         if (!config.shouldCheckEntity(target)) continue;
 
-                        updateVisibility(observer, target);
+                        updateVisibility(observer.player, target);
                     }
                 }
             }
@@ -187,13 +243,19 @@ public class VisibilityListener implements Listener {
 
             if (living instanceof Player observer) {
                 if (config.isOnlyPlayer()) {
-                    for (UUID targetUuid : CACHED_PLAYERS) {
-                        if (observer.getUniqueId().equals(targetUuid)) continue;
+                    Location obsLoc = observer.getLocation();
+                    double ox = obsLoc.getX();
+                    double oy = obsLoc.getY();
+                    double oz = obsLoc.getZ();
 
-                        Player target = Bukkit.getPlayer(targetUuid);
-                        if (target == null || !observer.getWorld().equals(target.getWorld())) continue;
+                    for (Player target : observer.getWorld().getPlayers()) {
+                        if (observer.equals(target)) continue;
 
-                        if (observer.getLocation().distanceSquared(target.getLocation()) <= maxDistSq) {
+                        Location targetLoc = target.getLocation();
+                        double dx = targetLoc.getX() - ox;
+                        double dy = targetLoc.getY() - oy;
+                        double dz = targetLoc.getZ() - oz;
+                        if (dx * dx + dy * dy + dz * dz <= maxDistSq) {
                             updateVisibility(observer, target);
                         }
                     }
@@ -206,11 +268,20 @@ public class VisibilityListener implements Listener {
                 }
             }
 
-            for (Player observer : living.getWorld().getPlayers()) {
-                if (observer.equals(living)) continue;
+            if (config.shouldCheckEntity(living)) {
+                Location livingLoc = living.getLocation();
+                double lx = livingLoc.getX();
+                double ly = livingLoc.getY();
+                double lz = livingLoc.getZ();
 
-                if (observer.getLocation().distanceSquared(living.getLocation()) <= maxDistSq) {
-                    if (config.shouldCheckEntity(living)) {
+                for (Player observer : living.getWorld().getPlayers()) {
+                    if (observer.equals(living)) continue;
+
+                    Location obsLoc = observer.getLocation();
+                    double dx = lx - obsLoc.getX();
+                    double dy = ly - obsLoc.getY();
+                    double dz = lz - obsLoc.getZ();
+                    if (dx * dx + dy * dy + dz * dz <= maxDistSq) {
                         updateVisibility(observer, living);
                     }
                 }

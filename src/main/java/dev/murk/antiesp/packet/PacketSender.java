@@ -5,15 +5,9 @@ import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.player.Equipment;
 import com.github.retrooper.packetevents.protocol.player.EquipmentSlot;
-import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.protocol.potion.PotionType;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEffect;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEquipment;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityTeleport;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnEntity;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnLivingEntity;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnPlayer;
+import com.github.retrooper.packetevents.util.Vector3d;
+import com.github.retrooper.packetevents.wrapper.play.server.*;
 import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -23,7 +17,6 @@ import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.potion.PotionEffect;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public final class PacketSender {
@@ -50,35 +43,6 @@ public final class PacketSender {
     }
 
     public static void sendSpawnPacket(Player observer, Entity entity) {
-        if (entity instanceof Player player) {
-            Location loc = player.getLocation();
-            WrapperPlayServerSpawnPlayer packet = new WrapperPlayServerSpawnPlayer(
-                    player.getEntityId(),
-                    player.getUniqueId(),
-                    SpigotConversionUtil.fromBukkitLocation(loc).getPosition(),
-                    loc.getYaw(),
-                    loc.getPitch(),
-                    Collections.emptyList()
-            );
-            PacketEvents.getAPI().getPlayerManager().sendPacket(observer, packet);
-            return;
-        }
-
-        if (entity instanceof LivingEntity living) {
-            Location loc = living.getLocation();
-            WrapperPlayServerSpawnLivingEntity packet = new WrapperPlayServerSpawnLivingEntity(
-                    living.getEntityId(),
-                    living.getUniqueId(),
-                    SpigotConversionUtil.fromBukkitEntityType(living.getType()),
-                    SpigotConversionUtil.fromBukkitLocation(loc),
-                    loc.getYaw(),
-                    Vector3d.zero(),
-                    Collections.emptyList()
-            );
-            PacketEvents.getAPI().getPlayerManager().sendPacket(observer, packet);
-            return;
-        }
-
         WrapperPlayServerSpawnEntity packet = new WrapperPlayServerSpawnEntity(
                 entity.getEntityId(),
                 entity.getUniqueId(),

@@ -118,41 +118,22 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
 
         if (config.isPredictMovement() && config.getPredictionMultiplier() > 0.0) {
             double mult = config.getPredictionMultiplier();
-            Vector targetVel = getVelocity(target);
             Vector obsVel = getVelocity(observer);
-
-            boolean targetMoving = (targetVel.getX() * targetVel.getX() + targetVel.getZ() * targetVel.getZ() > 0.001) || Math.abs(targetVel.getY()) > 0.1;
             boolean obsMoving = (obsVel.getX() * obsVel.getX() + obsVel.getZ() * obsVel.getZ() > 0.001) || Math.abs(obsVel.getY()) > 0.1;
 
-            if (targetMoving || obsMoving) {
-                double predStartX = startX + (obsMoving ? obsVel.getX() * mult : 0.0);
-                double predStartY = startY + (obsMoving ? obsVel.getY() * mult : 0.0);
-                double predStartZ = startZ + (obsMoving ? obsVel.getZ() * mult : 0.0);
+            if (obsMoving) {
+                double predStartX = startX + obsVel.getX() * mult;
+                double predStartY = startY + obsVel.getY() * mult;
+                double predStartZ = startZ + obsVel.getZ() * mult;
 
-                if (obsMoving && !FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, predStartX, predStartY, predStartZ)) {
+                if (!FastRaytracer.canSee(cacheManager, worldId, startX, startY, startZ, predStartX, predStartY, predStartZ)) {
                     predStartX = startX;
                     predStartY = startY;
                     predStartZ = startZ;
                 }
 
-                double predTargetX = targetX + (targetMoving ? targetVel.getX() * mult : 0.0);
-                double predTargetY = targetY + (targetMoving ? targetVel.getY() * mult : 0.0);
-                double predTargetZ = targetZ + (targetMoving ? targetVel.getZ() * mult : 0.0);
-
-                if (targetMoving && !FastRaytracer.canSee(cacheManager, worldId, targetX, targetY, targetZ, predTargetX, predTargetY, predTargetZ)) {
-                    predTargetX = targetX;
-                    predTargetY = targetY;
-                    predTargetZ = targetZ;
-                }
-
-                if (checkVisibility(worldId, predStartX, predStartY, predStartZ, predTargetX, predTargetY, predTargetZ, width, height)) {
+                if (checkVisibility(worldId, predStartX, predStartY, predStartZ, targetX, targetY, targetZ, width, height)) {
                     return true;
-                }
-
-                if (targetMoving && obsMoving) {
-                    if (checkVisibility(worldId, startX, startY, startZ, predTargetX, predTargetY, predTargetZ, width, height)) {
-                        return true;
-                    }
                 }
 
                 if (config.getF5().isEnabled()) {
@@ -164,13 +145,13 @@ public record VisibilityService(ChunkCacheManager cacheManager, Config config,
                     double f5Offset = config.getF5().getCollisionOffset();
 
                     Vector camBack = FastRaytracer.clipCamera(cacheManager, worldId, predStartX, predStartY, predStartZ, -lookX, -lookY, -lookZ, f5Dist, f5Offset);
-                    if (camBack != null && checkVisibility(worldId, camBack.getX(), camBack.getY(), camBack.getZ(), predTargetX, predTargetY, predTargetZ, width, height)) {
+                    if (camBack != null && checkVisibility(worldId, camBack.getX(), camBack.getY(), camBack.getZ(), targetX, targetY, targetZ, width, height)) {
                         return true;
                     }
 
                     if (config.getF5().isFrontView()) {
                         Vector camFront = FastRaytracer.clipCamera(cacheManager, worldId, predStartX, predStartY, predStartZ, lookX, lookY, lookZ, f5Dist, f5Offset);
-                        if (camFront != null && checkVisibility(worldId, camFront.getX(), camFront.getY(), camFront.getZ(), predTargetX, predTargetY, predTargetZ, width, height)) {
+                        if (camFront != null && checkVisibility(worldId, camFront.getX(), camFront.getY(), camFront.getZ(), targetX, targetY, targetZ, width, height)) {
                             return true;
                         }
                     }
